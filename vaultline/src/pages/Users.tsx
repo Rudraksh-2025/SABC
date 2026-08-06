@@ -59,7 +59,6 @@ export function Users() {
         <Grid item xs={12} lg={6}>
           <SectionCard
             title="Authentication and authorisation"
-            elements={[6]}
             description="Five controls apply to every session."
           >
             <Stack spacing={1.5}>
@@ -81,7 +80,6 @@ export function Users() {
         <Grid item xs={12} lg={6}>
           <SectionCard
             title="Pending authorisation"
-            elements={[7]}
             description="An SABC administrator authorises or declines every new account and reinstates locked accounts."
           >
             {!mayAuthorise && (
@@ -187,7 +185,6 @@ export function Users() {
         <Grid item xs={12}>
           <SectionCard
             title="Accounts"
-            elements={[25, 8]}
             description={`${users.length} accounts shown from 34 active accounts in production.`}
           >
             <Box sx={{ overflowX: 'auto' }}>
@@ -235,7 +232,6 @@ export function Users() {
         <Grid item xs={12}>
           <SectionCard
             title="Role permission matrix"
-            elements={[25, 8]}
             description="What each role may do. Your current role is highlighted; change it in the top bar and the screens change with it."
           >
             <Box sx={{ overflowX: 'auto' }}>

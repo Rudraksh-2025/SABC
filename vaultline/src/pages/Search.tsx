@@ -176,7 +176,6 @@ export function Search() {
         <Grid item xs={12} lg={9}>
           <SectionCard
             title="Search the index"
-            elements={[17, 11]}
             description="Filters apply together. The result count and the elapsed time are reported on every search."
           >
             <Grid container spacing={1.5} sx={{ mb: 2 }}>
@@ -305,7 +304,6 @@ export function Search() {
           <Stack spacing={2}>
             <SectionCard
               title="Lookup tables"
-              elements={[11]}
               description="Indexing is driven by maintained lookup tables, not free text."
             >
               <Stack spacing={1.25}>
@@ -329,7 +327,7 @@ export function Search() {
             </SectionCard>
 
             {requested && (
-              <SectionCard title="Off-site retrieval requested" elements={[17]}>
+              <SectionCard title="Off-site retrieval requested">
                 <Alert severity="success" sx={{ mb: 1.5 }}>
                   Retrieval clock started. Due back at Radio Park within four hours.
                 </Alert>

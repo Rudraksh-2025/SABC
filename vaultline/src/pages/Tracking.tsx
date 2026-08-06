@@ -157,7 +157,6 @@ export function Tracking() {
         <Grid item xs={12} lg={5}>
           <SectionCard
             title="Issue a file"
-            elements={[18]}
             description="Scan the file at the counter, name the recipient and set the due-back date. The receipt is raised on issue."
           >
             {!mayIssue && (
@@ -236,7 +235,6 @@ export function Tracking() {
             <Grid item xs={12} md={6}>
               <SectionCard
                 title="Issue receipt"
-                elements={[18]}
                 action={
                   <Button
                     size="small"
@@ -259,7 +257,6 @@ export function Tracking() {
             <Grid item xs={12} md={6}>
               <SectionCard
                 title="Return receipt"
-                elements={[18]}
                 action={
                   <Button
                     size="small"
@@ -285,7 +282,6 @@ export function Tracking() {
         <Grid item xs={12} lg={8}>
           <SectionCard
             title="Movement register"
-            elements={[9]}
             description={`${filtered.length.toLocaleString('en-ZA')} of ${movements.length.toLocaleString('en-ZA')} movements match the filters.`}
           >
             <Grid container spacing={1.5} sx={{ mb: 2 }}>
@@ -389,7 +385,6 @@ export function Tracking() {
         <Grid item xs={12} lg={4}>
           <SectionCard
             title="History for this reference"
-            elements={[9]}
             description={`Every movement recorded against ${reference || 'the reference above'}.`}
           >
             <MovementTimeline

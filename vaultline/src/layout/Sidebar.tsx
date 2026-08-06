@@ -1,7 +1,6 @@
 import { Box, Divider, Stack, Typography } from '@mui/material';
 import { NavLink, useLocation } from 'react-router-dom';
-import { CHECKLIST, MODULES, RFQ_REFERENCE, elementsForModule } from '../data/checklist';
-import { ElementBadge } from '../components/ElementBadge';
+import { CHECKLIST, MODULES, RFQ_REFERENCE } from '../data/checklist';
 import { Barcode } from '../components/Barcode';
 import { gold, mono } from '../theme';
 import type { ModuleDef } from '../types';
@@ -14,7 +13,6 @@ function ModuleLink({ module, onNavigate }: { module: ModuleDef; onNavigate?: ()
   const location = useLocation();
   const active =
     module.route === '/' ? location.pathname === '/' : location.pathname.startsWith(module.route);
-  const elements = elementsForModule(module.id);
 
   return (
     <Box
@@ -68,19 +66,6 @@ function ModuleLink({ module, onNavigate }: { module: ModuleDef; onNavigate?: ()
       >
         {module.description}
       </Typography>
-      {elements.length > 0 && (
-        <Stack
-          direction="row"
-          spacing={0.375}
-          flexWrap="wrap"
-          useFlexGap
-          sx={{ mt: 0.5, ml: module.code ? '30px' : 0 }}
-        >
-          {elements.map((n) => (
-            <ElementBadge key={n} number={n} tone="dark" />
-          ))}
-        </Stack>
-      )}
     </Box>
   );
 }

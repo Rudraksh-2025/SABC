@@ -145,7 +145,6 @@ export function Reports() {
         <Grid item xs={12} lg={5}>
           <SectionCard
             title="Report builder"
-            elements={[20, 24]}
             description="Choose the report, the period and the output. A report can be run now or scheduled by email."
           >
             {!mayBuild && (
@@ -250,7 +249,6 @@ export function Reports() {
         <Grid item xs={12} lg={7}>
           <SectionCard
             title={rendered ? `${reportType} — ${period}` : 'No report rendered yet'}
-            elements={[24]}
             description="Rendered output: a chart and the underlying figures, exactly as they appear in the PDF."
           >
             {rendered ? (
@@ -310,7 +308,6 @@ export function Reports() {
         <Grid item xs={12} lg={7}>
           <SectionCard
             title="Standard report library"
-            elements={[24]}
             description="Shipped with the system and available to Senior clerk and Administrator."
           >
             <Box sx={{ overflowX: 'auto' }}>
@@ -346,7 +343,6 @@ export function Reports() {
           <Stack spacing={2}>
             <SectionCard
               title="Add a field"
-              elements={[10]}
               description="An administrator adds an index field and publishes it. No vendor change request and no code release."
             >
               {mayAddFields ? (
@@ -433,7 +429,6 @@ export function Reports() {
 
             <SectionCard
               title="Lookup tables"
-              elements={[11]}
               description="Indexing values are maintained by SABC in lookup tables. Changing a value does not need a code release."
             >
               <Table size="small">

@@ -110,7 +110,6 @@ export function Audit() {
         <Grid item xs={12} lg={7}>
           <SectionCard
             title="Deletion requests"
-            elements={[16]}
             description="Only an Administrator may approve a deletion. Approval removes the index entry and writes an audit line."
           >
             {!mayDelete && (
@@ -208,7 +207,6 @@ export function Audit() {
           <Stack spacing={2}>
             <SectionCard
               title="Try a deletion at your current role"
-              elements={[16]}
               description="Switch to Clerk in the top bar and try this. The attempt is refused and a Blocked line is written."
             >
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
@@ -242,7 +240,6 @@ export function Audit() {
 
             <SectionCard
               title="Audit report"
-              elements={[20, 13]}
               description="The audit log is a standard report. It exports to PDF or CSV and can be scheduled to internal audit."
             >
               <Stack direction="row" spacing={2}>
@@ -280,7 +277,6 @@ export function Audit() {
         <Grid item xs={12}>
           <SectionCard
             title="Audit log"
-            elements={[13]}
             description={`Append-only. ${filtered.length} of ${audit.length} lines shown. Newest first.`}
           >
             <Grid container spacing={1.5} sx={{ mb: 2 }}>

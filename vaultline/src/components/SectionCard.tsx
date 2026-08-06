@@ -1,11 +1,9 @@
 import { Box, Card, CardContent, Divider, Stack, Typography } from '@mui/material';
 import type { ReactNode } from 'react';
-import { ElementBadge } from './ElementBadge';
 
 export interface SectionCardProps {
   title: string;
   description?: string;
-  elements?: number[];
   action?: ReactNode;
   children: ReactNode;
   dense?: boolean;
@@ -16,7 +14,6 @@ export interface SectionCardProps {
 export function SectionCard({
   title,
   description,
-  elements,
   action,
   children,
   dense = false,
@@ -33,10 +30,7 @@ export function SectionCard({
           alignItems={{ xs: 'flex-start', sm: 'flex-start' }}
         >
           <Box sx={{ minWidth: 0 }}>
-            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-              <Typography variant="h3">{title}</Typography>
-              {elements?.map((n) => <ElementBadge key={n} number={n} />)}
-            </Stack>
+            <Typography variant="h3">{title}</Typography>
             {description && (
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 760 }}>
                 {description}

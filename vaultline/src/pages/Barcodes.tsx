@@ -164,7 +164,6 @@ export function Barcodes() {
         <Grid item xs={12}>
           <SectionCard
             title="Scan resolves the linkage chain"
-            elements={[4, 3]}
             description="Scan a document, box or location barcode. All three resolve the same chain. The top bar search accepts the same values."
           >
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mb: 2.5 }}>
@@ -271,7 +270,6 @@ export function Barcodes() {
         <Grid item xs={12} lg={7}>
           <SectionCard
             title="Adhesive label sheet"
-            elements={[5]}
             description={`${stockDef.label}. The preview is to scale; printing uses the stock and margins set in the print dialog.`}
             action={
               <Button size="small" startIcon={<PrintOutlinedIcon />} onClick={() => setPrintOpen(true)}>
@@ -296,7 +294,6 @@ export function Barcodes() {
           <Stack spacing={2}>
             <SectionCard
               title="What the barcode carries"
-              elements={[3, 12]}
               description="Code 128B. The encoded string carries the series code with the document type and the sub-document type."
             >
               <Barcode
@@ -328,7 +325,6 @@ export function Barcodes() {
 
             <SectionCard
               title="Box and location labels"
-              elements={[4]}
               description="Boxes and shelves carry their own labels so a clerk can scan the shelf and confirm the box is where the index says it is."
             >
               <Stack spacing={2}>

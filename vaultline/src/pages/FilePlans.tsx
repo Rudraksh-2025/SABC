@@ -124,7 +124,6 @@ export function FilePlans() {
         <Grid item xs={12} lg={7}>
           <SectionCard
             title="Corporate File Plan 2019 — series tree"
-            elements={[2]}
             description="Series, sub-series and sub-type folders with the number of indexed entries filed under each."
             action={
               <Stack direction="row" spacing={1}>

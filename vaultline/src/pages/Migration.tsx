@@ -77,7 +77,6 @@ export function Migration() {
         <Grid item xs={12} lg={7}>
           <SectionCard
             title={`Migration run ${migrationRun.id}`}
-            elements={[1]}
             description={`${migrationRun.source} → ${migrationRun.target}. Started ${migrationRun.started.replace('T', ' ')} by ${migrationRun.operator}.`}
           >
             <Stack spacing={2.5}>
@@ -125,7 +124,6 @@ export function Migration() {
           <Stack spacing={2}>
             <SectionCard
               title="Reconciliation"
-              elements={[1]}
               description="Counts are compared row for row. The run is not signed off while a variance stands."
             >
               <Table size="small">
@@ -165,7 +163,6 @@ export function Migration() {
 
             <SectionCard
               title="Exit & data handback"
-              elements={[1]}
               description="What SABC receives if the contract ends. The data and the licence stay with SABC."
             >
               <Stack spacing={1.25}>
@@ -188,7 +185,6 @@ export function Migration() {
         <Grid item xs={12}>
           <SectionCard
             title="Document Warehouse → VaultLine field mapping"
-            elements={[1]}
             description="Every source field, where it lands, how it is transformed and whether it verified."
           >
             <Box sx={{ overflowX: 'auto' }}>

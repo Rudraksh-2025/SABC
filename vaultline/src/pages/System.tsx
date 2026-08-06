@@ -86,7 +86,6 @@ export function System() {
         <Grid item xs={12} lg={6}>
           <SectionCard
             title="Platform"
-            elements={[22]}
             description="Windows-based, multi-user and network ready. It runs on SABC infrastructure inside the SABC network."
           >
             <Rows
@@ -107,7 +106,6 @@ export function System() {
         <Grid item xs={12} lg={6}>
           <SectionCard
             title="Licence"
-            elements={[23]}
             description="Stated plainly so the panel can price it against the other bids."
           >
             <Rows
@@ -128,7 +126,6 @@ export function System() {
         <Grid item xs={12} lg={5}>
           <SectionCard
             title="Backup and recovery"
-            elements={[26]}
             description="The backup regime and the objectives it is designed to meet."
           >
             <Stack spacing={1.25}>
@@ -156,7 +153,6 @@ export function System() {
         <Grid item xs={12} lg={7}>
           <SectionCard
             title="Restores performed"
-            elements={[26]}
             description="Two live incidents and one quarterly test. Each is evidenced and filed under series 3/1/7."
           >
             <Box sx={{ overflowX: 'auto' }}>
