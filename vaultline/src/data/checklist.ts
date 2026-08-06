@@ -86,13 +86,13 @@ export const MODULES: ModuleDef[] = [
     description: 'Platform, licence terms, backup and recovery',
     route: '/system',
   },
-  {
-    id: 'checklist',
-    code: '',
-    label: 'Demo checklist',
-    description: 'All 26 evaluation elements and where each is proven',
-    route: '/checklist',
-  },
+  // {
+  //   id: 'checklist',
+  //   code: '',
+  //   label: 'Demo checklist',
+  //   description: 'All 26 evaluation elements and where each is proven',
+  //   route: '/checklist',
+  // },
 ];
 
 export const CHECKLIST: ChecklistElement[] = [
