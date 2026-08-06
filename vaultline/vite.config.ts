@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 // needs no code change: BASE_PATH=/vaultline/ npm run build
 export default defineConfig({
   plugins: [react()],
-  base: process.env.BASE_PATH ?? '/',
+  // base: process.env.BASE_PATH ?? '/',
   build: {
     outDir: 'dist',
     chunkSizeWarningLimit: 1400,
