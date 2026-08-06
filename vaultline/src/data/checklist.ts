@@ -94,6 +94,7 @@ export const MODULES: ModuleDef[] = [
     route: '/checklist',
   },
 ];
+console.log("hello")
 
 export const CHECKLIST: ChecklistElement[] = [
   {
