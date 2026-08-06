@@ -1,0 +1,3223 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>VaultLine — SABC Records Management, Archiving &amp; Tracking</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;800&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        /* ============================================================
+   VaultLine — records vault UI
+   Palette derived from the SABC signal flag + archive materials:
+   ink slate, vault paper, signal gold, tape teal, seal red.
+   No JavaScript: every interaction below is CSS state.
+   ============================================================ */
+        :root {
+            --ink: #141C2B;
+            --ink-2: #1E2A3D;
+            --ink-3: #2C3A50;
+            --paper: #F6F3EA;
+            --paper-2: #EDE8DA;
+            --gold: #E4A62B;
+            --teal: #178C86;
+            --seal: #B8372C;
+            --line: rgba(20, 28, 43, .14);
+            --line-d: rgba(246, 243, 234, .16);
+            --shadow: 0 1px 0 rgba(20, 28, 43, .05), 0 12px 28px -18px rgba(20, 28, 43, .55);
+            --rail: 250px;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: "Public Sans", system-ui, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            font-family: "Archivo", system-ui, sans-serif;
+            margin: 0;
+            letter-spacing: -.01em
+        }
+
+        .mono {
+            font-family: "IBM Plex Mono", ui-monospace, monospace
+        }
+
+        a {
+            color: var(--teal)
+        }
+
+        /* ---- barcode motif: the signature device -------------------- */
+        .barcode {
+            background-image: repeating-linear-gradient(90deg,
+                    currentColor 0 2px, transparent 2px 5px,
+                    currentColor 5px 6px, transparent 6px 10px,
+                    currentColor 10px 13px, transparent 13px 14px,
+                    currentColor 14px 15px, transparent 15px 19px,
+                    currentColor 19px 21px, transparent 21px 26px);
+            height: 44px;
+        }
+
+        .barcode.sm {
+            height: 26px
+        }
+
+        .barcode.tall {
+            height: 70px
+        }
+
+        .rule-barcode {
+            color: var(--ink);
+            opacity: .28;
+            height: 10px;
+            background-image: repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 4px, currentColor 4px 6px, transparent 6px 13px);
+        }
+
+        /* ---- shell -------------------------------------------------- */
+        .tabstate {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+            width: 0;
+            height: 0
+        }
+
+        .shell {
+            display: grid;
+            grid-template-columns: var(--rail) 1fr;
+            min-height: 100vh
+        }
+
+        .rail {
+            background: var(--ink);
+            color: var(--paper);
+            padding: 22px 0 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .railscroll {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 10px
+        }
+
+        .railscroll::-webkit-scrollbar {
+            width: 8px
+        }
+
+        .railscroll::-webkit-scrollbar-thumb {
+            background: rgba(246, 243, 234, .16);
+            border-radius: 8px
+        }
+
+        .railfoot {
+            border-top: 1px solid var(--line-d);
+            padding: 10px 12px 14px;
+            background: rgba(0, 0, 0, .16)
+        }
+
+        .railmeta {
+            font-size: 10.5px;
+            color: rgba(246, 243, 234, .42);
+            padding: 10px 10px 0;
+            line-height: 1.5
+        }
+
+        .brand {
+            padding: 0 20px 18px;
+            border-bottom: 1px solid var(--line-d)
+        }
+
+        .brand .mark {
+            display: flex;
+            align-items: baseline;
+            gap: 9px
+        }
+
+        .brand .mark b {
+            font-family: "Archivo";
+            font-weight: 800;
+            font-size: 21px;
+            letter-spacing: -.02em
+        }
+
+        .brand .chip {
+            font-family: "IBM Plex Mono";
+            font-size: 10px;
+            color: var(--ink);
+            background: var(--gold);
+            padding: 2px 6px;
+            border-radius: 3px;
+            letter-spacing: .06em
+        }
+
+        .brand p {
+            margin: 8px 0 10px;
+            font-size: 11.5px;
+            color: rgba(246, 243, 234, .6);
+            line-height: 1.45
+        }
+
+        .brand .barcode {
+            color: var(--gold);
+            opacity: .85
+        }
+
+        .navgroup {
+            padding: 16px 12px 0
+        }
+
+        .navgroup>span {
+            display: block;
+            font-family: "IBM Plex Mono";
+            font-size: 10px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: rgba(246, 243, 234, .42);
+            padding: 0 8px 8px
+        }
+
+        .navlink {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 9px 10px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 13.5px;
+            color: rgba(246, 243, 234, .86);
+            user-select: none;
+            position: relative;
+            margin-bottom: 2px;
+        }
+
+        .navlink .mi {
+            font-family: "IBM Plex Mono";
+            font-size: 10px;
+            font-style: normal;
+            letter-spacing: .02em;
+            min-width: 28px;
+            height: 22px;
+            display: grid;
+            place-items: center;
+            border-radius: 5px;
+            background: rgba(246, 243, 234, .08);
+            color: rgba(246, 243, 234, .62);
+            flex: none;
+            margin-top: 1px;
+        }
+
+        .navlink .lbl {
+            display: block;
+            line-height: 1.3;
+            min-width: 0
+        }
+
+        .navlink .lbl small {
+            display: block;
+            font-size: 11px;
+            color: rgba(246, 243, 234, .45);
+            margin-top: 3px;
+            font-weight: 400
+        }
+
+        .navlink .els {
+            font-family: "IBM Plex Mono";
+            font-style: normal;
+            font-size: 9px;
+            color: rgba(246, 243, 234, .34);
+            margin-left: auto;
+            text-align: right;
+            white-space: nowrap;
+            padding-top: 3px;
+        }
+
+        .navlink.lead {
+            margin: 0 12px 4px;
+            background: rgba(246, 243, 234, .05)
+        }
+
+        .navlink.pin {
+            margin: 0
+        }
+
+        .navlink:hover {
+            background: rgba(246, 243, 234, .1);
+            color: #fff
+        }
+
+        .navlink:hover .mi {
+            background: rgba(228, 166, 43, .22);
+            color: var(--gold)
+        }
+
+        .navlink:focus-visible {
+            outline: 2px solid var(--gold);
+            outline-offset: 2px
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            padding: 14px 26px;
+            border-bottom: 1px solid var(--line);
+            background: rgba(246, 243, 234, .85);
+            backdrop-filter: blur(6px);
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+
+        .searchbox {
+            flex: 1;
+            min-width: 220px;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 8px 12px;
+            box-shadow: var(--shadow)
+        }
+
+        .searchbox input {
+            border: 0;
+            outline: 0;
+            flex: 1;
+            font: inherit;
+            background: transparent
+        }
+
+        .searchbox .kbd {
+            font-family: "IBM Plex Mono";
+            font-size: 10px;
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            padding: 2px 5px;
+            color: #6b7383
+        }
+
+        .who {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--teal);
+            color: #fff;
+            display: grid;
+            place-items: center;
+            font-family: "Archivo";
+            font-weight: 600;
+            font-size: 12px
+        }
+
+        .who small {
+            display: block;
+            font-size: 11px;
+            color: #69707e
+        }
+
+        .badge-role {
+            font-family: "IBM Plex Mono";
+            font-size: 10px;
+            background: var(--ink);
+            color: var(--paper);
+            padding: 3px 7px;
+            border-radius: 4px
+        }
+
+        main {
+            min-width: 0
+        }
+
+        .panel {
+            display: none;
+            padding: 26px
+        }
+
+        .pagehead {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 18px;
+            flex-wrap: wrap;
+            margin-bottom: 20px
+        }
+
+        .eyebrow {
+            font-family: "IBM Plex Mono";
+            font-size: 10.5px;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+            color: var(--teal)
+        }
+
+        .pagehead h1 {
+            font-size: 27px;
+            font-weight: 800;
+            margin-top: 5px
+        }
+
+        .pagehead p {
+            margin: 6px 0 0;
+            color: #5d6472;
+            max-width: 62ch
+        }
+
+        /* ---- panel switching (CSS only) ----------------------------- */
+        #t-dash:checked~.shell #p-dash,
+        #t-cap:checked~.shell #p-cap,
+        #t-plan:checked~.shell #p-plan,
+        #t-label:checked~.shell #p-label,
+        #t-track:checked~.shell #p-track,
+        #t-search:checked~.shell #p-search,
+        #t-audit:checked~.shell #p-audit,
+        #t-users:checked~.shell #p-users,
+        #t-mig:checked~.shell #p-mig,
+        #t-rep:checked~.shell #p-rep,
+        #t-sys:checked~.shell #p-sys,
+        #t-map:checked~.shell #p-map {
+            display: block
+        }
+
+        #t-dash:checked~.shell label[for="t-dash"],
+        #t-cap:checked~.shell label[for="t-cap"],
+        #t-plan:checked~.shell label[for="t-plan"],
+        #t-label:checked~.shell label[for="t-label"],
+        #t-track:checked~.shell label[for="t-track"],
+        #t-search:checked~.shell label[for="t-search"],
+        #t-audit:checked~.shell label[for="t-audit"],
+        #t-users:checked~.shell label[for="t-users"],
+        #t-mig:checked~.shell label[for="t-mig"],
+        #t-rep:checked~.shell label[for="t-rep"],
+        #t-sys:checked~.shell label[for="t-sys"],
+        #t-map:checked~.shell label[for="t-map"] {
+            background: rgba(228, 166, 43, .16);
+            color: #fff;
+        }
+
+        #t-dash:checked~.shell label[for="t-dash"]::before,
+        #t-cap:checked~.shell label[for="t-cap"]::before,
+        #t-plan:checked~.shell label[for="t-plan"]::before,
+        #t-label:checked~.shell label[for="t-label"]::before,
+        #t-track:checked~.shell label[for="t-track"]::before,
+        #t-search:checked~.shell label[for="t-search"]::before,
+        #t-audit:checked~.shell label[for="t-audit"]::before,
+        #t-users:checked~.shell label[for="t-users"]::before,
+        #t-mig:checked~.shell label[for="t-mig"]::before,
+        #t-rep:checked~.shell label[for="t-rep"]::before,
+        #t-sys:checked~.shell label[for="t-sys"]::before,
+        #t-map:checked~.shell label[for="t-map"]::before {
+            content: "";
+            position: absolute;
+            left: -12px;
+            top: 6px;
+            bottom: 6px;
+            width: 3px;
+            background: var(--gold);
+            border-radius: 0 3px 3px 0;
+        }
+
+        #t-dash:checked~.shell label[for="t-dash"] .mi,
+        #t-cap:checked~.shell label[for="t-cap"] .mi,
+        #t-plan:checked~.shell label[for="t-plan"] .mi,
+        #t-label:checked~.shell label[for="t-label"] .mi,
+        #t-track:checked~.shell label[for="t-track"] .mi,
+        #t-search:checked~.shell label[for="t-search"] .mi,
+        #t-audit:checked~.shell label[for="t-audit"] .mi,
+        #t-users:checked~.shell label[for="t-users"] .mi,
+        #t-mig:checked~.shell label[for="t-mig"] .mi,
+        #t-rep:checked~.shell label[for="t-rep"] .mi,
+        #t-sys:checked~.shell label[for="t-sys"] .mi,
+        #t-map:checked~.shell label[for="t-map"] .mi {
+            background: var(--gold);
+            color: #38270a
+        }
+
+        /* ---- building blocks ---------------------------------------- */
+        .card {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            box-shadow: var(--shadow)
+        }
+
+        .card>header {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap
+        }
+
+        .card>header h3 {
+            font-size: 14.5px;
+            font-weight: 600
+        }
+
+        .card>header .sub {
+            font-size: 11.5px;
+            color: #6b7383
+        }
+
+        .card .body {
+            padding: 16px
+        }
+
+        .grid {
+            display: grid;
+            gap: 16px
+        }
+
+        .g2 {
+            grid-template-columns: repeat(2, minmax(0, 1fr))
+        }
+
+        .g3 {
+            grid-template-columns: repeat(3, minmax(0, 1fr))
+        }
+
+        .g4 {
+            grid-template-columns: repeat(4, minmax(0, 1fr))
+        }
+
+        .g-2-1 {
+            grid-template-columns: minmax(0, 2fr) minmax(0, 1fr)
+        }
+
+        .g-1-2 {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 2fr)
+        }
+
+        .stat {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 15px 16px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden
+        }
+
+        .stat .k {
+            font-family: "IBM Plex Mono";
+            font-size: 10.5px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: #6b7383
+        }
+
+        .stat .v {
+            font-family: "Archivo";
+            font-weight: 800;
+            font-size: 29px;
+            letter-spacing: -.03em;
+            margin-top: 6px
+        }
+
+        .stat .d {
+            font-size: 11.5px;
+            color: #6b7383;
+            margin-top: 2px
+        }
+
+        .stat .barcode {
+            position: absolute;
+            right: -6px;
+            top: 14px;
+            width: 56px;
+            height: 34px;
+            color: var(--ink);
+            opacity: .07
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-family: "IBM Plex Mono";
+            font-size: 10.5px;
+            padding: 3px 7px;
+            border-radius: 4px;
+            border: 1px solid var(--line);
+            background: var(--paper-2);
+            color: var(--ink-3)
+        }
+
+        .tag.ok {
+            background: rgba(23, 140, 134, .12);
+            border-color: rgba(23, 140, 134, .3);
+            color: #0e6a65
+        }
+
+        .tag.warn {
+            background: rgba(228, 166, 43, .16);
+            border-color: rgba(228, 166, 43, .42);
+            color: #8a6208
+        }
+
+        .tag.bad {
+            background: rgba(184, 55, 44, .1);
+            border-color: rgba(184, 55, 44, .3);
+            color: var(--seal)
+        }
+
+        .tag.ink {
+            background: var(--ink);
+            border-color: var(--ink);
+            color: var(--paper)
+        }
+
+        .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            display: inline-block
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px
+        }
+
+        th {
+            font-family: "IBM Plex Mono";
+            font-size: 10px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: #6b7383;
+            text-align: left;
+            padding: 9px 12px;
+            border-bottom: 1px solid var(--line);
+            white-space: nowrap;
+            background: var(--paper-2)
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--line);
+            vertical-align: middle
+        }
+
+        tbody tr:hover {
+            background: rgba(23, 140, 134, .05)
+        }
+
+        .tablewrap {
+            overflow-x: auto
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            border: 1px solid var(--ink);
+            background: var(--ink);
+            color: var(--paper);
+            border-radius: 7px;
+            padding: 8px 13px;
+            font: inherit;
+            font-weight: 500;
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: none
+        }
+
+        .btn:hover {
+            background: var(--ink-2)
+        }
+
+        .btn.ghost {
+            background: transparent;
+            color: var(--ink);
+            border-color: var(--line)
+        }
+
+        .btn.ghost:hover {
+            background: var(--paper-2)
+        }
+
+        .btn.gold {
+            background: var(--gold);
+            border-color: var(--gold);
+            color: #38270a
+        }
+
+        .btn.gold:hover {
+            filter: brightness(1.05)
+        }
+
+        .btn.danger {
+            background: transparent;
+            color: var(--seal);
+            border-color: rgba(184, 55, 44, .4)
+        }
+
+        .btn[disabled],
+        .btn.locked {
+            opacity: .45;
+            cursor: not-allowed
+        }
+
+        .btn:focus-visible,
+        .navlink:focus-visible,
+        summary:focus-visible {
+            outline: 2px solid var(--teal);
+            outline-offset: 2px
+        }
+
+        label.f {
+            display: block;
+            font-family: "IBM Plex Mono";
+            font-size: 10px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: #6b7383;
+            margin-bottom: 5px
+        }
+
+        .field {
+            margin-bottom: 14px
+        }
+
+        input[type=text],
+        input[type=search],
+        select,
+        textarea {
+            width: 100%;
+            font: inherit;
+            font-size: 13.5px;
+            padding: 9px 11px;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            background: #fff;
+            color: var(--ink)
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: 2px solid rgba(23, 140, 134, .45);
+            outline-offset: 0;
+            border-color: var(--teal)
+        }
+
+        .hint {
+            font-size: 11.5px;
+            color: #6b7383;
+            margin-top: 5px
+        }
+
+        .hint.ok {
+            color: #0e6a65
+        }
+
+        .hint.bad {
+            color: var(--seal)
+        }
+
+        .note {
+            border-left: 3px solid var(--gold);
+            background: rgba(228, 166, 43, .1);
+            padding: 11px 14px;
+            border-radius: 0 8px 8px 0;
+            font-size: 12.5px
+        }
+
+        .note.teal {
+            border-color: var(--teal);
+            background: rgba(23, 140, 134, .09)
+        }
+
+        .note.seal {
+            border-color: var(--seal);
+            background: rgba(184, 55, 44, .08)
+        }
+
+        /* label sheet */
+        .sheet {
+            background: #fff;
+            border: 1px dashed rgba(20, 28, 43, .35);
+            border-radius: 6px;
+            padding: 14px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px
+        }
+
+        .lab {
+            border: 1px solid var(--line);
+            border-radius: 5px;
+            padding: 10px;
+            background: var(--paper)
+        }
+
+        .lab .top {
+            display: flex;
+            justify-content: space-between;
+            font-family: "IBM Plex Mono";
+            font-size: 9.5px;
+            color: #6b7383
+        }
+
+        .lab b {
+            display: block;
+            font-family: "Archivo";
+            font-size: 12.5px;
+            margin: 4px 0 6px
+        }
+
+        .lab .code {
+            font-family: "IBM Plex Mono";
+            font-size: 10.5px;
+            letter-spacing: .06em;
+            text-align: center;
+            margin-top: 4px
+        }
+
+        /* tree */
+        .tree {
+            font-size: 13px
+        }
+
+        .tree details {
+            border-left: 1px solid var(--line);
+            margin-left: 9px;
+            padding-left: 12px
+        }
+
+        .tree>details {
+            border-left: 0;
+            margin-left: 0;
+            padding-left: 0
+        }
+
+        .tree summary {
+            cursor: pointer;
+            padding: 5px 4px;
+            border-radius: 5px;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .tree summary::-webkit-details-marker {
+            display: none
+        }
+
+        .tree summary::before {
+            content: "+";
+            font-family: "IBM Plex Mono";
+            font-size: 11px;
+            color: var(--teal);
+            width: 12px
+        }
+
+        .tree details[open]>summary::before {
+            content: "–"
+        }
+
+        .tree summary:hover {
+            background: var(--paper-2)
+        }
+
+        .tree .leaf {
+            padding: 5px 4px 5px 24px;
+            color: #4a5162;
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .series {
+            font-family: "IBM Plex Mono";
+            font-size: 11px;
+            color: var(--ink);
+            background: var(--paper-2);
+            padding: 1px 5px;
+            border-radius: 3px
+        }
+
+        /* timeline */
+        .chain {
+            list-style: none;
+            margin: 0;
+            padding: 0
+        }
+
+        .chain li {
+            position: relative;
+            padding: 0 0 18px 26px;
+            border-left: 1px solid var(--line);
+            margin-left: 7px
+        }
+
+        .chain li:last-child {
+            border-left-color: transparent;
+            padding-bottom: 0
+        }
+
+        .chain li::before {
+            content: "";
+            position: absolute;
+            left: -5px;
+            top: 4px;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #fff;
+            border: 2px solid var(--teal)
+        }
+
+        .chain li.now::before {
+            background: var(--gold);
+            border-color: var(--gold)
+        }
+
+        .chain .when {
+            font-family: "IBM Plex Mono";
+            font-size: 10.5px;
+            color: #6b7383
+        }
+
+        .chain .what {
+            font-size: 13px;
+            margin-top: 2px
+        }
+
+        .chain .who {
+            font-size: 11.5px;
+            color: #5d6472;
+            display: block
+        }
+
+        /* meter */
+        .meter {
+            height: 7px;
+            border-radius: 99px;
+            background: var(--paper-2);
+            overflow: hidden
+        }
+
+        .meter i {
+            display: block;
+            height: 100%;
+            background: var(--teal)
+        }
+
+        .meter i.gold {
+            background: var(--gold)
+        }
+
+        .meter i.seal {
+            background: var(--seal)
+        }
+
+        /* bar chart, pure CSS */
+        .bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            height: 150px;
+            padding-top: 8px
+        }
+
+        .bars>div {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 6px;
+            height: 100%
+        }
+
+        .bars .b {
+            width: 100%;
+            background: var(--ink);
+            border-radius: 4px 4px 0 0;
+            position: relative
+        }
+
+        .bars .b.alt {
+            background: var(--teal)
+        }
+
+        .bars small {
+            font-family: "IBM Plex Mono";
+            font-size: 10px;
+            color: #6b7383
+        }
+
+        .kv {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 8px 16px;
+            font-size: 13px
+        }
+
+        .kv dt {
+            font-family: "IBM Plex Mono";
+            font-size: 10.5px;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: #6b7383;
+            padding-top: 2px
+        }
+
+        .kv dd {
+            margin: 0
+        }
+
+        .checklist {
+            width: 100%;
+            border-collapse: collapse
+        }
+
+        .checklist td:first-child {
+            font-family: "IBM Plex Mono";
+            font-size: 11px;
+            color: #6b7383;
+            width: 38px
+        }
+
+        .yes {
+            color: #0e6a65;
+            font-weight: 600
+        }
+
+        .footnote {
+            margin-top: 22px;
+            padding-top: 14px;
+            border-top: 1px solid var(--line);
+            font-size: 11.5px;
+            color: #6b7383;
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            flex-wrap: wrap
+        }
+
+        /* ---- responsive --------------------------------------------- */
+        @media (max-width:1080px) {
+            .g4 {
+                grid-template-columns: repeat(2, minmax(0, 1fr))
+            }
+
+            .g3,
+            .g-2-1,
+            .g-1-2 {
+                grid-template-columns: minmax(0, 1fr)
+            }
+        }
+
+        @media (max-width:860px) {
+            .shell {
+                grid-template-columns: 1fr
+            }
+
+            .rail {
+                position: static;
+                height: auto;
+                padding-bottom: 12px;
+                display: block
+            }
+
+            .brand {
+                padding-bottom: 12px
+            }
+
+            .railscroll {
+                display: flex;
+                gap: 6px;
+                overflow-x: auto;
+                padding: 12px 12px 4px
+            }
+
+            .navgroup {
+                display: flex;
+                gap: 6px;
+                padding: 0
+            }
+
+            .navgroup>span {
+                display: none
+            }
+
+            .navlink {
+                white-space: nowrap;
+                background: rgba(246, 243, 234, .06);
+                margin: 0;
+                align-items: center
+            }
+
+            .navlink .lbl small,
+            .navlink .els {
+                display: none
+            }
+
+            .navlink.lead {
+                margin: 0
+            }
+
+            .railfoot {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex-wrap: wrap;
+                background: transparent
+            }
+
+            .railmeta {
+                padding: 0
+            }
+
+            .g2 {
+                grid-template-columns: minmax(0, 1fr)
+            }
+
+            .panel {
+                padding: 18px 14px
+            }
+
+            .sheet {
+                grid-template-columns: 1fr
+            }
+        }
+
+        @media (prefers-reduced-motion:reduce) {
+            * {
+                transition: none !important;
+                animation: none !important
+            }
+        }
+
+        @media print {
+
+            .rail,
+            .topbar {
+                display: none
+            }
+
+            .panel {
+                display: block !important
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- panel state -->
+    <input class="tabstate" type="radio" name="nav" id="t-dash" checked>
+    <input class="tabstate" type="radio" name="nav" id="t-cap">
+    <input class="tabstate" type="radio" name="nav" id="t-plan">
+    <input class="tabstate" type="radio" name="nav" id="t-label">
+    <input class="tabstate" type="radio" name="nav" id="t-track">
+    <input class="tabstate" type="radio" name="nav" id="t-search">
+    <input class="tabstate" type="radio" name="nav" id="t-audit">
+    <input class="tabstate" type="radio" name="nav" id="t-users">
+    <input class="tabstate" type="radio" name="nav" id="t-mig">
+    <input class="tabstate" type="radio" name="nav" id="t-rep">
+    <input class="tabstate" type="radio" name="nav" id="t-sys">
+    <input class="tabstate" type="radio" name="nav" id="t-map">
+
+    <div class="shell">
+
+        <!-- ============ RAIL ============ -->
+        <nav class="rail" aria-label="Modules">
+            <div class="brand">
+                <div class="mark"><b>SABC Vault</b></div>
+                <p>RECORDS · ARCHIVE · TRACKING</p>
+            </div>
+
+            <div class="railscroll" style="padding-top: 10px;">
+                <label class="navlink lead" for="t-dash" tabindex="0">
+                    <i class="mi">▤</i>
+                    <span class="lbl">Dashboard<small>Live status of the whole vault</small></span>
+                </label>
+
+                <div class="navgroup">
+                    <span>Modules</span>
+
+                    <label class="navlink" for="t-cap" tabindex="0">
+                        <i class="mi">M1</i>
+                        <span class="lbl">Capture &amp; indexing<small>Data entry, scanner import,
+                                duplicates</small></span>
+                    </label>
+
+                    <label class="navlink" for="t-plan" tabindex="0">
+                        <i class="mi">M2</i>
+                        <span class="lbl">File plan management<small>Both SABC plans and sub-type folders</small></span>
+                    </label>
+
+                    <label class="navlink" for="t-label" tabindex="0">
+                        <i class="mi">M3</i>
+                        <span class="lbl">Barcodes &amp; labels<small>Generate, link, print on adhesive</small></span>
+
+                    </label>
+
+                    <label class="navlink" for="t-track" tabindex="0">
+                        <i class="mi">M4</i>
+                        <span class="lbl">Tracking &amp; circulation<small>Movements, loans, transaction
+                                proof</small></span>
+
+                    </label>
+
+                    <label class="navlink" for="t-search" tabindex="0">
+                        <i class="mi">M5</i>
+                        <span class="lbl">Search &amp; retrieval<small>Find any entry, open the document</small></span>
+
+                    </label>
+
+                    <label class="navlink" for="t-audit" tabindex="0">
+                        <i class="mi">M6</i>
+                        <span class="lbl">Audit &amp; compliance<small>Event log, deletion control</small></span>
+
+                    </label>
+
+                    <label class="navlink" for="t-rep" tabindex="0">
+                        <i class="mi">M7</i>
+                        <span class="lbl">Reporting &amp; configuration<small>New fields, lookups,
+                                reports</small></span>
+
+                    </label>
+
+                    <label class="navlink" for="t-users" tabindex="0">
+                        <i class="mi">M8</i>
+                        <span class="lbl">Security &amp; user admin<small>Roles, authorisation, access
+                                control</small></span>
+
+                    </label>
+
+                    <label class="navlink" for="t-mig" tabindex="0">
+                        <i class="mi">M9</i>
+                        <span class="lbl">Data migration &amp; exit<small>Document Warehouse conversion</small></span>
+
+                    </label>
+
+                    <label class="navlink" for="t-sys" tabindex="0">
+                        <i class="mi">M10</i>
+                        <span class="lbl">System, licensing &amp; continuity<small>Platform, licences,
+                                backup</small></span>
+
+                    </label>
+                </div>
+            </div>
+
+            <!-- <div class="railfoot">
+                <label class="navlink pin" for="t-map" tabindex="0">
+                    <i class="mi">✓</i>
+                    <span class="lbl">Demo checklist<small>All 26 elements, mapped</small></span>
+                </label>
+                <div class="railmeta"><span class="mono">RFQ/COP/2026/10251403/11</span><br>Third-phase demonstration
+                    build</div>
+            </div> -->
+        </nav>
+
+        <main>
+            <!-- ============ TOP BAR ============ -->
+            <div class="topbar">
+                <div class="searchbox">
+                    <span class="mono" aria-hidden="true">⌕</span>
+                    <input type="search"
+                        placeholder="Scan a barcode or type a reference, file plan code, box or subject…"
+                        aria-label="Search records">
+                    <span class="kbd">SCANNER READY</span>
+                </div>
+                <span class="tag ok"><i class="dot"></i> Network drive VLT-01 connected</span>
+                <div class="who">
+                    <div class="avatar">NM</div>
+                    <div>
+                        <strong>N. Mahlangu</strong>
+                        <small>Records Administrator · <span class="badge-role">ADMIN</span></small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ 01 · VAULT OVERVIEW ============ -->
+            <section class="panel" id="p-dash">
+                <div class="pagehead">
+                    <div>
+                        <div class="eyebrow">Vault overview</div>
+                        <h1>Good morning, Nomsa</h1>
+                        <p>Everything in the vault at a glance: what moved overnight, what's out on loan, and what needs
+                            an administrator today.</p>
+                    </div>
+                    <div style="display:flex;gap:8px">
+                        <span class="btn ghost">Export view</span>
+                        <label class="btn gold" for="t-cap">New data entry</label>
+                    </div>
+                </div>
+
+                <div class="grid g4" style="margin-bottom:16px">
+                    <div class="stat">
+                        <div class="barcode"></div>
+                        <div class="k">Indexed entries</div>
+                        <div class="v">418 662</div>
+                        <div class="d">+ 1 204 captured this week</div>
+                    </div>
+                    <div class="stat">
+                        <div class="barcode"></div>
+                        <div class="k">Archive boxes</div>
+                        <div class="v">27 941</div>
+                        <div class="d">Across 6 vault rows, 3 floors</div>
+                    </div>
+                    <div class="stat">
+                        <div class="barcode"></div>
+                        <div class="k">Files out on loan</div>
+                        <div class="v">86</div>
+                        <div class="d">11 overdue past 14 days</div>
+                    </div>
+                    <div class="stat">
+                        <div class="barcode"></div>
+                        <div class="k">Duplicates flagged</div>
+                        <div class="v">7</div>
+                        <div class="d">Awaiting reviewer decision</div>
+                    </div>
+                </div>
+
+                <div class="grid g-2-1" style="margin-bottom:16px">
+                    <div class="card">
+                        <header>
+                            <div>
+                                <h3>Movements today</h3>
+                                <div class="sub">Every scan writes origin, destination, user, date and time</div>
+                            </div>
+                            <label class="btn ghost" for="t-track">Open track &amp; trace</label>
+                        </header>
+                        <div class="tablewrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Item</th>
+                                        <th>From</th>
+                                        <th>To</th>
+                                        <th>User</th>
+                                        <th>Type</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="mono">08:42</td>
+                                        <td class="mono">DOC-2026-004128</td>
+                                        <td>VLT-A-R12-S03</td>
+                                        <td>News Desk, 4th floor</td>
+                                        <td>T. van Wyk</td>
+                                        <td><span class="tag warn">Issued</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="mono">08:31</td>
+                                        <td class="mono">BOX-ARC-00412</td>
+                                        <td>Staging bay 2</td>
+                                        <td>VLT-B-R04-S11</td>
+                                        <td>N. Mahlangu</td>
+                                        <td><span class="tag ok">Shelved</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="mono">08:14</td>
+                                        <td class="mono">DOC-2026-003977</td>
+                                        <td>Legal Services</td>
+                                        <td>VLT-A-R09-S02</td>
+                                        <td>P. Sithole</td>
+                                        <td><span class="tag ok">Returned</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="mono">07:58</td>
+                                        <td class="mono">BOX-ARC-01188</td>
+                                        <td>VLT-C-R01-S06</td>
+                                        <td>Scanning room</td>
+                                        <td>K. Naidoo</td>
+                                        <td><span class="tag">In transit</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="mono">07:40</td>
+                                        <td class="mono">DOC-2026-003960</td>
+                                        <td>VLT-B-R07-S09</td>
+                                        <td>Human Capital</td>
+                                        <td>M. Dlamini</td>
+                                        <td><span class="tag warn">Issued</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="grid" style="align-content:start">
+                        <div class="card">
+                            <header>
+                                <h3>Needs an administrator</h3>
+                            </header>
+                            <div class="body grid" style="gap:12px">
+                                <div class="note seal"><strong>2 deletion requests</strong><br>Only administrators may
+                                    delete an entry. Each decision is written to the audit trail.<br><label
+                                        class="btn danger" for="t-audit" style="margin-top:8px">Review requests</label>
+                                </div>
+                                <div class="note"><strong>3 new user requests</strong><br>SABC authorises every account
+                                    before first sign-in.<br><label class="btn ghost" for="t-users"
+                                        style="margin-top:8px">Review users</label></div>
+                                <div class="note teal"><strong>7 duplicate documents</strong><br>Matched on checksum and
+                                    file plan code during import.<br><label class="btn ghost" for="t-cap"
+                                        style="margin-top:8px">Open duplicate queue</label></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid g2">
+                    <div class="card">
+                        <header>
+                            <h3>Capture volume, last six months</h3><span class="tag">Entries indexed</span>
+                        </header>
+                        <div class="body">
+                            <div class="bars">
+                                <div>
+                                    <div class="b" style="height:46%"></div><small>Mar</small>
+                                </div>
+                                <div>
+                                    <div class="b" style="height:58%"></div><small>Apr</small>
+                                </div>
+                                <div>
+                                    <div class="b" style="height:41%"></div><small>May</small>
+                                </div>
+                                <div>
+                                    <div class="b" style="height:72%"></div><small>Jun</small>
+                                </div>
+                                <div>
+                                    <div class="b" style="height:63%"></div><small>Jul</small>
+                                </div>
+                                <div>
+                                    <div class="b alt" style="height:88%"></div><small>Aug</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <header>
+                            <h3>Retrieval turnaround</h3><span class="tag ok">Target: under 4 hours</span>
+                        </header>
+                        <div class="body grid" style="gap:14px">
+                            <div>
+                                <div style="display:flex;justify-content:space-between;font-size:12.5px"><span>Same-day
+                                        retrievals met</span><strong>96%</strong></div>
+                                <div class="meter" style="margin-top:6px"><i style="width:96%"></i></div>
+                            </div>
+                            <div>
+                                <div style="display:flex;justify-content:space-between;font-size:12.5px"><span>Loans
+                                        returned within 14 days</span><strong>81%</strong></div>
+                                <div class="meter" style="margin-top:6px"><i class="gold" style="width:81%"></i></div>
+                            </div>
+                            <div>
+                                <div style="display:flex;justify-content:space-between;font-size:12.5px"><span>Vault
+                                        shelf capacity used</span><strong>74%</strong></div>
+                                <div class="meter" style="margin-top:6px"><i style="width:74%"></i></div>
+                            </div>
+                            <div class="note teal">Average restore time after an interruption is <strong>2 h 40
+                                    m</strong>, inside the four-hour service commitment.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="footnote"><span>Demo data. Nothing on this screen is a live SABC record.</span><span
+                        class="mono">RFQ/COP/2026/10251403/11</span></div>
+            </section>
+
+            <!-- ============ 02 · CAPTURE & INDEX ============ -->
+            <section class="panel" id="p-cap">
+                <div class="pagehead">
+                    <div>
+                        <div class="eyebrow">Capture &amp; index · elements 3, 12, 14, 15, 19, 21</div>
+                        <h1>Capture a new data entry</h1>
+                        <p>Index one document against one entry, using the National Archives file plan. The reference
+                            number and barcode are generated when you save.</p>
+                    </div>
+                    <span class="tag ink">Draft · not yet saved</span>
+                </div>
+
+                <div class="grid g-2-1">
+                    <div class="card">
+                        <header>
+                            <h3>Entry details</h3><span class="sub">Fields marked with a series code come from the
+                                active file plan</span>
+                        </header>
+                        <div class="body">
+                            <div class="grid g2">
+                                <div class="field">
+                                    <label class="f" for="c1">Reference number</label>
+                                    <input id="c1" type="text" class="mono" value="DOC-2026-004131" readonly>
+                                    <div class="hint ok">Generated and locked. Every reference is unique — duplicates
+                                        are rejected on save.</div>
+                                </div>
+                                <div class="field">
+                                    <label class="f" for="c2">Date received</label>
+                                    <input id="c2" type="text" value="03 August 2026">
+                                </div>
+                            </div>
+
+                            <div class="grid g2">
+                                <div class="field">
+                                    <label class="f" for="c3">File plan</label>
+                                    <select id="c3">
+                                        <option>SABC Corporate File Plan 2019 (NARSSA approved)</option>
+                                        <option>SABC Broadcast Operations File Plan 2023 (NARSSA approved)</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label class="f" for="c4">Series code</label>
+                                    <select id="c4">
+                                        <option>9/1/3 — Board &amp; committee minutes</option>
+                                        <option>4/2/1 — Programme contracts</option>
+                                        <option>12/5/2 — Employee records</option>
+                                        <option>7/3/4 — Licence &amp; regulatory correspondence</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid g2">
+                                <div class="field">
+                                    <label class="f" for="c5">Document type</label>
+                                    <select id="c5">
+                                        <option>Minutes</option>
+                                        <option>Contract</option>
+                                        <option>Correspondence</option>
+                                        <option>Policy</option>
+                                    </select>
+                                    <div class="hint">Lookup table · maintained by administrators</div>
+                                </div>
+                                <div class="field">
+                                    <label class="f" for="c6">Sub-document type</label>
+                                    <select id="c6">
+                                        <option>Board sub-committee — Audit</option>
+                                        <option>Board — Ordinary sitting</option>
+                                        <option>Exco</option>
+                                    </select>
+                                    <div class="hint">Both values are encoded into the barcode</div>
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label class="f" for="c7">Subject / title</label>
+                                <input id="c7" type="text" value="Audit &amp; Risk Committee minutes — Q1 FY2026/27">
+                            </div>
+
+                            <div class="grid g3">
+                                <div class="field"><label class="f" for="c8">Division</label><select id="c8">
+                                        <option>Company Secretariat</option>
+                                        <option>News &amp; Current Affairs</option>
+                                        <option>Legal Services</option>
+                                    </select></div>
+                                <div class="field"><label class="f" for="c9">Box barcode</label><input id="c9"
+                                        class="mono" type="text" value="BOX-ARC-00412"></div>
+                                <div class="field"><label class="f" for="c10">Shelf location</label><input id="c10"
+                                        class="mono" type="text" value="VLT-A-R12-S03"></div>
+                            </div>
+
+                            <div class="field">
+                                <label class="f">Classification &amp; retention</label>
+                                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                                    <span class="tag ink">Confidential</span>
+                                    <span class="tag">National Key Points Act — restricted handling</span>
+                                    <span class="tag">Retention: 20 years, then transfer to NARSSA</span>
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label class="f">Attached document</label>
+                                <div
+                                    style="border:1px dashed var(--line);border-radius:8px;padding:14px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+                                    <span class="mono" style="font-size:22px">⤓</span>
+                                    <div style="flex:1;min-width:180px">
+                                        <strong>ARC-Minutes-Q1-2026.pdf</strong> · 3.1 MB
+                                        <div class="hint">Imported from Scanner 02 (Records Room) at 08:51 · auto-linked
+                                            to this entry</div>
+                                    </div>
+                                    <span class="btn ghost">Import from scanner</span>
+                                    <span class="btn ghost">Upload file</span>
+                                </div>
+                                <div class="hint">One document per data entry. Adding a second replaces the first and
+                                    records the change on the audit trail.</div>
+                            </div>
+
+                            <div
+                                style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line);padding-top:14px">
+                                <label class="btn gold" for="t-label">Save entry &amp; generate barcode</label>
+                                <span class="btn ghost">Save as draft</span>
+                                <span class="btn locked danger" title="Administrators only">Delete entry</span>
+                                <span class="hint" style="margin:0">Deletion is restricted to administrators and is
+                                    always logged.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid" style="align-content:start">
+                        <div class="card">
+                            <header>
+                                <h3>Duplicate check</h3><span class="tag warn"><i class="dot"></i> 1 possible
+                                    match</span>
+                            </header>
+                            <div class="body">
+                                <div class="note seal" style="margin-bottom:12px">
+                                    <strong>Looks like this may already be filed.</strong><br>
+                                    <span class="mono">DOC-2025-118440</span> — same checksum, same series code 9/1/3,
+                                    captured 14 Nov 2025 by P. Sithole.
+                                </div>
+                                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                                    <span class="btn ghost">Compare side by side</span>
+                                    <span class="btn ghost">Not a duplicate</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <header>
+                                <h3>Barcode preview</h3><span class="sub">Encodes series, type, sub-type</span>
+                            </header>
+                            <div class="body" style="text-align:center">
+                                <div class="lab" style="text-align:left">
+                                    <div class="top"><span>SABC RECORDS</span><span>9/1/3</span></div>
+                                    <b>Minutes · Board sub-committee — Audit</b>
+                                    <div class="barcode tall"></div>
+                                    <div class="code">DOC-2026-004131</div>
+                                    <div class="top" style="margin-top:8px">
+                                        <span>BOX-ARC-00412</span><span>VLT-A-R12-S03</span>
+                                    </div>
+                                </div>
+                                <div class="hint" style="margin-top:10px">Prints on 70 × 37 mm adhesive label stock.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <header>
+                                <h3>Entry validity</h3>
+                            </header>
+                            <div class="body">
+                                <dl class="kv">
+                                    <dt>Reference</dt>
+                                    <dd class="yes">Unique ✓</dd>
+                                    <dt>Documents</dt>
+                                    <dd class="yes">1 of 1 ✓</dd>
+                                    <dt>File plan</dt>
+                                    <dd class="yes">Series code matched ✓</dd>
+                                    <dt>Captured by</dt>
+                                    <dd>N. Mahlangu · 03 Aug 2026, 09:04</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ 06 · FILE PLANS ============ -->
+            <section class="panel" id="p-plan">
+                <div class="pagehead">
+                    <div>
+                        <div class="eyebrow">File plans · element 2</div>
+                        <h1>SABC file plans</h1>
+                        <p>Both approved file plans and every sub-type folder are loaded into the index, with the source
+                            PDF linked from SharePoint.</p>
+                    </div>
+                    <span class="btn ghost">Import new file plan version</span>
+                </div>
+
+                <div class="grid g-1-2">
+                    <div class="grid" style="align-content:start">
+                        <div class="card">
+                            <header>
+                                <h3>Active plans</h3>
+                            </header>
+                            <div class="body grid" style="gap:12px">
+                                <div style="border:1px solid var(--line);border-radius:8px;padding:12px">
+                                    <strong>Corporate File Plan 2019</strong>
+                                    <div class="hint">NARSSA approval ref. NA/9/2/1-2019 · 214 series, 1 380 sub-folders
+                                    </div>
+                                    <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><span
+                                            class="tag ok"><i class="dot"></i> In use</span><a class="tag" href="#">Open
+                                            PDF on SharePoint</a></div>
+                                </div>
+                                <div style="border:1px solid var(--line);border-radius:8px;padding:12px">
+                                    <strong>Broadcast Operations File Plan 2023</strong>
+                                    <div class="hint">NARSSA approval ref. NA/9/2/1-2023 · 96 series, 604 sub-folders
+                                    </div>
+                                    <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><span
+                                            class="tag ok"><i class="dot"></i> In use</span><a class="tag" href="#">Open
+                                            PDF on SharePoint</a></div>
+                                </div>
+                                <div style="border:1px solid var(--line);border-radius:8px;padding:12px;opacity:.7">
+                                    <strong>Corporate File Plan 2011</strong>
+                                    <div class="hint">Superseded · retained read-only for legacy records</div>
+                                    <div style="margin-top:8px"><span class="tag">Archived version</span></div>
+                                </div>
+                                <div class="note teal">Series codes follow the South African National Archives indexing
+                                    methodology. Older records keep the version they were captured under.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <header>
+                            <h3>Corporate File Plan 2019 — structure</h3><span class="sub">Expand a series to see
+                                sub-type folders</span>
+                        </header>
+                        <div class="body tree">
+                            <details open>
+                                <summary><span class="series">9</span> <strong>Governance &amp; Secretariat</strong>
+                                </summary>
+                                <details open>
+                                    <summary><span class="series">9/1</span> Board records</summary>
+                                    <div class="leaf"><span class="series">9/1/1</span> Board charters <span
+                                            class="tag">412 entries</span></div>
+                                    <div class="leaf"><span class="series">9/1/2</span> Board resolutions <span
+                                            class="tag">1 908 entries</span></div>
+                                    <div class="leaf"><span class="series">9/1/3</span> Board &amp; committee minutes
+                                        <span class="tag ok">6 244 entries</span>
+                                    </div>
+                                </details>
+                                <details>
+                                    <summary><span class="series">9/2</span> Delegations of authority</summary>
+                                    <div class="leaf"><span class="series">9/2/1</span> Approved frameworks <span
+                                            class="tag">88 entries</span></div>
+                                </details>
+                            </details>
+                            <details>
+                                <summary><span class="series">4</span> <strong>Content &amp; Programming</strong>
+                                </summary>
+                                <details>
+                                    <summary><span class="series">4/2</span> Commissioning</summary>
+                                    <div class="leaf"><span class="series">4/2/1</span> Programme contracts <span
+                                            class="tag">3 116 entries</span></div>
+                                    <div class="leaf"><span class="series">4/2/2</span> Talent agreements <span
+                                            class="tag">2 044 entries</span></div>
+                                </details>
+                            </details>
+                            <details>
+                                <summary><span class="series">7</span> <strong>Regulatory &amp; Licensing</strong>
+                                </summary>
+                                <div class="leaf"><span class="series">7/3/4</span> Licence correspondence <span
+                                        class="tag">1 271 entries</span></div>
+                            </details>
+                            <details>
+                                <summary><span class="series">12</span> <strong>Human Capital</strong></summary>
+                                <div class="leaf"><span class="series">12/5/2</span> Employee records <span
+                                        class="tag">18 402 entries</span></div>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ 03 · BARCODES & LABELS ============ -->
+            <section class="panel" id="p-label">
+                <div class="pagehead">
+                    <div>
+                        <div class="eyebrow">Barcodes &amp; labels · elements 3, 4, 5, 12</div>
+                        <h1>Barcodes &amp; label printing</h1>
+                        <p>Document, box and location barcodes are linked to each other, so one scan tells you the file,
+                            its box and its shelf.</p>
+                    </div>
+                    <div style="display:flex;gap:8px"><span class="btn ghost">Choose label stock</span><span
+                            class="btn gold">Print to adhesive sheet</span></div>
+                </div>
+
+                <div class="grid g-2-1">
+                    <div class="card">
+                        <header>
+                            <h3>Print queue — Avery L7161, 18 labels per sheet</h3><span class="tag ok">Barcode
+                                generated ✓</span>
+                        </header>
+                        <div class="body">
+                            <div class="sheet">
+                                <div class="lab">
+                                    <div class="top"><span>DOCUMENT</span><span>9/1/3</span></div>
+                                    <b>Minutes · Board sub-committee — Audit</b>
+                                    <div class="barcode"></div>
+                                    <div class="code">DOC-2026-004131</div>
+                                </div>
+                                <div class="lab">
+                                    <div class="top"><span>BOX</span><span>Row A</span></div>
+                                    <b>Archive box · Governance 2026</b>
+                                    <div class="barcode"></div>
+                                    <div class="code">BOX-ARC-00412</div>
+                                </div>
+                                <div class="lab">
+                                    <div class="top"><span>LOCATION</span><span>Vault A</span></div>
+                                    <b>Shelf · Row 12, Slot 03</b>
+                                    <div class="barcode"></div>
+                                    <div class="code">VLT-A-R12-S03</div>
+                                </div>
+                                <div class="lab">
+                                    <div class="top"><span>DOCUMENT</span><span>4/2/1</span></div>
+                                    <b>Contract · Programme commissioning</b>
+                                    <div class="barcode"></div>
+                                    <div class="code">DOC-2026-004132</div>
+                                </div>
+                            </div>
+                            <div class="hint" style="margin-top:12px">Sheet preview is to scale. Margins and label pitch
+                                are set per printer profile.</div>
+                        </div>
+                    </div>
+
+                    <div class="grid" style="align-content:start">
+                        <div class="card">
+                            <header>
+                                <h3>Barcode linkage</h3>
+                            </header>
+                            <div class="body">
+                                <ul class="chain">
+                                    <li class="now"><span class="when">DOCUMENT</span><span
+                                            class="what mono">DOC-2026-004131</span><span class="who">Minutes · Audit
+                                            sub-committee</span></li>
+                                    <li><span class="when">SITS IN BOX</span><span
+                                            class="what mono">BOX-ARC-00412</span><span class="who">Governance 2026 · 41
+                                            files</span></li>
+                                    <li><span class="when">SHELVED AT</span><span
+                                            class="what mono">VLT-A-R12-S03</span><span class="who">Vault A, Row 12,
+                                            Slot 03</span></li>
+                                </ul>
+                                <div class="note teal" style="margin-top:12px">Scanning any one of the three barcodes
+                                    opens this chain, so a clerk holding only a box can see everything inside it.</div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <header>
+                                <h3>What the barcode carries</h3>
+                            </header>
+                            <div class="body">
+                                <dl class="kv">
+                                    <dt>Symbology</dt>
+                                    <dd>Code 128B</dd>
+                                    <dt>Series</dt>
+                                    <dd class="mono">9/1/3</dd>
+                                    <dt>Doc type</dt>
+                                    <dd>Minutes</dd>
+                                    <dt>Sub-type</dt>
+                                    <dd>Board sub-committee — Audit</dd>
+                                    <dt>Reference</dt>
+                                    <dd class="mono">DOC-2026-004131</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ 04 · TRACK & TRACE ============ -->
+            <section class="panel" id="p-track">
+                <div class="pagehead">
+                    <div>
+                        <div class="eyebrow">Track &amp; trace · elements 9, 18</div>
+                        <h1>Track &amp; trace</h1>
+                        <p>Every box and file movement is recorded with origin, destination, user, date and time — and
+                            both the request and the return are receipted.</p>
+                    </div>
+                    <div style="display:flex;gap:8px"><span class="btn ghost">Issue a file</span><span
+                            class="btn gold">Scan a return</span></div>
+                </div>
+
+                <div class="grid g-2-1" style="margin-bottom:16px">
+                    <div class="card">
+                        <header>
+                            <div>
+                                <h3>Travel history — <span class="mono">DOC-2026-004128</span></h3>
+                                <div class="sub">Ministerial correspondence file · currently on loan</div>
+                            </div>
+                            <span class="tag warn"><i class="dot"></i> Out since 08:42 today</span>
+                        </header>
+                        <div class="body">
+                            <ul class="chain">
+                                <li class="now"><span class="when">03 AUG 2026 · 08:42</span><span class="what">Issued
+                                        to News Desk, 4th floor</span><span class="who">From VLT-A-R12-S03 · scanned by
+                                        T. van Wyk · receipt TRX-88214 signed</span></li>
+                                <li><span class="when">28 JUL 2026 · 15:06</span><span class="what">Returned to
+                                        vault</span><span class="who">From Legal Services to VLT-A-R12-S03 · scanned by
+                                        P. Sithole · return receipt TRX-88109</span></li>
+                                <li><span class="when">21 JUL 2026 · 09:20</span><span class="what">Issued to Legal
+                                        Services</span><span class="who">From VLT-A-R12-S03 · scanned by P. Sithole ·
+                                        request receipt TRX-88090</span></li>
+                                <li><span class="when">14 MAY 2026 · 11:12</span><span class="what">Re-boxed into
+                                        BOX-ARC-00412</span><span class="who">Staging bay 2 · K. Naidoo</span></li>
+                                <li><span class="when">02 FEB 2026 · 08:03</span><span class="what">Captured and
+                                        shelved</span><span class="who">Scanning room to VLT-A-R12-S03 · N.
+                                        Mahlangu</span></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="grid" style="align-content:start">
+                        <div class="card">
+                            <header>
+                                <h3>Proof of transaction</h3>
+                            </header>
+                            <div class="body">
+                                <div
+                                    style="border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px">
+                                    <div class="top mono"
+                                        style="font-size:10px;color:#6b7383;display:flex;justify-content:space-between">
+                                        <span>REQUEST RECEIPT</span><span>TRX-88214</span>
+                                    </div>
+                                    <div class="barcode sm" style="margin:8px 0"></div>
+                                    <dl class="kv" style="font-size:12px">
+                                        <dt>Item</dt>
+                                        <dd class="mono">DOC-2026-004128</dd>
+                                        <dt>To</dt>
+                                        <dd>T. van Wyk · News Desk</dd>
+                                        <dt>Issued</dt>
+                                        <dd>03 Aug 2026, 08:42</dd>
+                                        <dt>Due back</dt>
+                                        <dd>17 Aug 2026</dd>
+                                    </dl>
+                                </div>
+                                <div
+                                    style="border:1px dashed var(--line);border-radius:8px;padding:12px;color:#6b7383;font-size:12.5px">
+                                    <strong style="color:var(--ink)">Return receipt</strong><br>
+                                    Not issued yet. It is created the moment the file is scanned back into the vault.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <header>
+                                <h3>Overdue loans</h3><span class="tag bad">11</span>
+                            </header>
+                            <div class="body">
+                                <dl class="kv">
+                                    <dt>News</dt>
+                                    <dd>5 files · oldest 31 days</dd>
+                                    <dt>Legal</dt>
+                                    <dd>3 files · oldest 22 days</dd>
+                                    <dt>Human Capital</dt>
+                                    <dd>2 files · oldest 18 days</dd>
+                                    <dt>Finance</dt>
+                                    <dd>1 file · 16 days</dd>
+                                </dl>
+                                <span class="btn ghost" style="margin-top:12px">Send reminders</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <header>
+                        <h3>Movement register</h3><span class="sub">Filter by division, vault row, user or date
+                            range</span>
+                    </header>
+                    <div class="tablewrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Transaction</th>
+                                    <th>Item</th>
+                                    <th>Origin</th>
+                                    <th>Destination</th>
+                                    <th>User</th>
+                                    <th>Date &amp; time</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="mono">TRX-88214</td>
+                                    <td class="mono">DOC-2026-004128</td>
+                                    <td>VLT-A-R12-S03</td>
+                                    <td>News Desk</td>
+                                    <td>T. van Wyk</td>
+                                    <td class="mono">03/08/2026 08:42</td>
+                                    <td><span class="tag warn">On loan</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="mono">TRX-88213</td>
+                                    <td class="mono">BOX-ARC-00412</td>
+                                    <td>Staging bay 2</td>
+                                    <td>VLT-B-R04-S11</td>
+                                    <td>N. Mahlangu</td>
+                                    <td class="mono">03/08/2026 08:31</td>
+                                    <td><span class="tag ok">Shelved</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="mono">TRX-88212</td>
+                                    <td class="mono">DOC-2026-003977</td>
+                                    <td>Legal Services</td>
+                                    <td>VLT-A-R09-S02</td>
+                                    <td>P. Sithole</td>
+                                    <td class="mono">03/08/2026 08:14</td>
+                                    <td><span class="tag ok">Returned</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="mono">TRX-88211</td>
+                                    <td class="mono">BOX-ARC-01188</td>
+                                    <td>VLT-C-R01-S06</td>
+                                    <td>Scanning room</td>
+                                    <td>K. Naidoo</td>
+                                    <td class="mono">03/08/2026 07:58</td>
+                                    <td><span class="tag">In transit</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="mono">TRX-88210</td>
+                                    <td class="mono">DOC-2026-003960</td>
+                                    <td>VLT-B-R07-S09</td>
+                                    <td>Human Capital</td>
+                                    <td>M. Dlamini</td>
+                                    <td class="mono">03/08/2026 07:40</td>
+                                    <td><span class="tag warn">On loan</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="mono">TRX-88209</td>
+                                    <td class="mono">DOC-2025-118440</td>
+                                    <td>VLT-A-R12-S01</td>
+                                    <td>Company Secretariat</td>
+                                    <td>N. Mahlangu</td>
+                                    <td class="mono">02/08/2026 16:22</td>
+                                    <td><span class="tag ok">Returned</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ 05 · SEARCH & RETRIEVE ============ -->
+            <section class="panel" id="p-search">
+                <div class="pagehead">
+                    <div>
+                        <div class="eyebrow">Search &amp; retrieve · elements 11, 17</div>
+                        <h1>Search &amp; retrieve</h1>
+                        <p>Every field is searchable, and the linked document opens straight from the result. Lookup
+                            tables keep the filters consistent.</p>
+                    </div>
+                    <span class="tag ok">142 results in 0.31 s</span>
+                </div>
+
+                <div class="grid g-1-2">
+                    <div class="card">
+                        <header>
+                            <h3>Refine</h3><span class="sub">Lookup-driven</span>
+                        </header>
+                        <div class="body">
+                            <div class="field"><label class="f" for="s1">Keyword</label><input id="s1" type="text"
+                                    value="audit committee minutes"></div>
+                            <div class="field"><label class="f" for="s2">File plan series</label><select id="s2">
+                                    <option>9/1/3 — Board &amp; committee minutes</option>
+                                    <option>All series</option>
+                                </select></div>
+                            <div class="field"><label class="f" for="s3">Document type</label><select id="s3">
+                                    <option>Minutes</option>
+                                    <option>All types</option>
+                                </select></div>
+                            <div class="field"><label class="f" for="s4">Division</label><select id="s4">
+                                    <option>Company Secretariat</option>
+                                    <option>All divisions</option>
+                                </select></div>
+                            <div class="field"><label class="f" for="s5">Date range</label><input id="s5" type="text"
+                                    value="01 Jan 2024 – 03 Aug 2026"></div>
+                            <div class="field"><label class="f">Location</label>
+                                <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="tag ink">Vault
+                                        A</span><span class="tag">Vault B</span><span class="tag">Vault C</span><span
+                                        class="tag">Off-site</span></div>
+                            </div>
+                            <div style="display:flex;gap:8px"><span class="btn gold">Search</span><span
+                                    class="btn ghost">Save this search</span></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <header>
+                            <h3>Results</h3><span class="sub">Showing 1–5 of 142</span>
+                        </header>
+                        <div class="tablewrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Reference</th>
+                                        <th>Subject</th>
+                                        <th>Series</th>
+                                        <th>Box</th>
+                                        <th>Location</th>
+                                        <th>Document</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="mono">DOC-2026-004131</td>
+                                        <td>Audit &amp; Risk Committee minutes — Q1 FY2026/27</td>
+                                        <td class="mono">9/1/3</td>
+                                        <td class="mono">ARC-00412</td>
+                                        <td class="mono">VLT-A-R12-S03</td>
+                                        <td><span class="btn ghost" style="padding:4px 9px">Open PDF</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="mono">DOC-2025-118440</td>
+                                        <td>Audit &amp; Risk Committee minutes — Q3 FY2025/26</td>
+                                        <td class="mono">9/1/3</td>
+                                        <td class="mono">ARC-00398</td>
+                                        <td class="mono">VLT-A-R12-S01</td>
+                                        <td><span class="btn ghost" style="padding:4px 9px">Open PDF</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="mono">DOC-2025-101772</td>
+                                        <td>Audit Committee special sitting — irregular expenditure</td>
+                                        <td class="mono">9/1/3</td>
+                                        <td class="mono">ARC-00355</td>
+                                        <td class="mono">VLT-A-R11-S07</td>
+                                        <td><span class="btn ghost" style="padding:4px 9px">Open PDF</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="mono">DOC-2024-094010</td>
+                                        <td>Board minutes — annual report approval</td>
+                                        <td class="mono">9/1/3</td>
+                                        <td class="mono">ARC-00301</td>
+                                        <td class="mono">VLT-B-R02-S04</td>
+                                        <td><span class="btn ghost" style="padding:4px 9px">Open PDF</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="mono">DOC-2024-088265</td>
+                                        <td>Audit Committee minutes — external auditor briefing</td>
+                                        <td class="mono">9/1/3</td>
+                                        <td class="mono">ARC-00288</td>
+                                        <td class="mono">Off-site, Midrand</td>
+                                        <td><span class="btn ghost" style="padding:4px 9px">Request</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="body" style="border-top:1px solid var(--line)">
+                            <div class="note teal">Records held off-site show a <strong>Request</strong> action. The
+                                request creates a receipt and starts the retrieval clock — a four-hour target for
+                                on-site items.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ 07 · AUDIT TRAIL ============ -->
+            <section class="panel" id="p-audit">
+                <div class="pagehead">
+                    <div>
+                        <div class="eyebrow">Audit trail · elements 13, 16, 20</div>
+                        <h1>Audit trail</h1>
+                        <p>Written automatically, never edited. Every line carries the user, the workstation, and a date
+                            and time stamp.</p>
+                    </div>
+                    <div style="display:flex;gap:8px"><span class="btn ghost">Filter</span><span
+                            class="btn ghost">Export audit report (PDF)</span></div>
+                </div>
+
+                <div class="grid g4" style="margin-bottom:16px">
+                    <div class="stat">
+                        <div class="k">Events today</div>
+                        <div class="v">1 942</div>
+                        <div class="d">Across 34 signed-in users</div>
+                    </div>
+                    <div class="stat">
+                        <div class="k">Deletions</div>
+                        <div class="v">2</div>
+                        <div class="d">Both by administrators</div>
+                    </div>
+                    <div class="stat">
+                        <div class="k">Failed sign-ins</div>
+                        <div class="v">5</div>
+                        <div class="d">1 account locked</div>
+                    </div>
+                    <div class="stat">
+                        <div class="k">Retention</div>
+                        <div class="v">7 yrs</div>
+                        <div class="d">Write-once storage</div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom:16px">
+                    <header>
+                        <h3>Event log</h3><span class="sub">Read-only. No user role can amend or remove a line.</span>
+                    </header>
+                    <div class="tablewrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>User</th>
+                                    <th>Role</th>
+                                    <th>Action</th>
+                                    <th>Object</th>
+                                    <th>Workstation</th>
+                                    <th>Result</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="mono">03/08/2026 09:04:12</td>
+                                    <td>N. Mahlangu</td>
+                                    <td><span class="tag ink">Admin</span></td>
+                                    <td>Created data entry</td>
+                                    <td class="mono">DOC-2026-004131</td>
+                                    <td class="mono">RP-REC-14</td>
+                                    <td><span class="tag ok">Allowed</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="mono">03/08/2026 08:57:03</td>
+                                    <td>N. Mahlangu</td>
+                                    <td><span class="tag ink">Admin</span></td>
+                                    <td><strong>Deleted data entry</strong> — reason: duplicate capture</td>
+                                    <td class="mono">DOC-2026-004119</td>
+                                    <td class="mono">RP-REC-14</td>
+                                    <td><span class="tag bad">Deleted</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="mono">03/08/2026 08:51:44</td>
+                                    <td>System</td>
+                                    <td><span class="tag">Service</span></td>
+                                    <td>Scanner import linked to entry</td>
+                                    <td class="mono">DOC-2026-004131</td>
+                                    <td class="mono">SCAN-02</td>
+                                    <td><span class="tag ok">Allowed</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="mono">03/08/2026 08:42:10</td>
+                                    <td>T. van Wyk</td>
+                                    <td><span class="tag">Clerk</span></td>
+                                    <td>Issued file to News Desk</td>
+                                    <td class="mono">DOC-2026-004128</td>
+                                    <td class="mono">RP-NEWS-07</td>
+                                    <td><span class="tag ok">Allowed</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="mono">03/08/2026 08:39:55</td>
+                                    <td>T. van Wyk</td>
+                                    <td><span class="tag">Clerk</span></td>
+                                    <td>Attempted delete of data entry</td>
+                                    <td class="mono">DOC-2026-004128</td>
+                                    <td class="mono">RP-NEWS-07</td>
+                                    <td><span class="tag bad">Blocked — admin only</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="mono">03/08/2026 08:12:31</td>
+                                    <td>M. Dlamini</td>
+                                    <td><span class="tag">Reader</span></td>
+                                    <td>Attempted sign-in</td>
+                                    <td>—</td>
+                                    <td class="mono">RP-HC-03</td>
+                                    <td><span class="tag bad">Failed · 3rd attempt</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="mono">03/08/2026 07:58:02</td>
+                                    <td>K. Naidoo</td>
+                                    <td><span class="tag">Clerk</span></td>
+                                    <td>Moved box to scanning room</td>
+                                    <td class="mono">BOX-ARC-01188</td>
+                                    <td class="mono">RP-REC-09</td>
+                                    <td><span class="tag ok">Allowed</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="mono">02/08/2026 16:22:47</td>
+                                    <td>N. Mahlangu</td>
+                                    <td><span class="tag ink">Admin</span></td>
+                                    <td>Amended lookup table “Document type”</td>
+                                    <td>Lookup · DOC_TYPE</td>
+                                    <td class="mono">RP-REC-14</td>
+                                    <td><span class="tag ok">Allowed</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="grid g2">
+                    <div class="card">
+                        <header>
+                            <h3>Deletion requests</h3><span class="tag bad">2 waiting</span>
+                        </header>
+                        <div class="body grid" style="gap:12px">
+                            <div style="border:1px solid var(--line);border-radius:8px;padding:12px">
+                                <strong class="mono">DOC-2026-004077</strong>
+                                <div class="hint">Requested by T. van Wyk · “Scanned twice during Ministerial
+                                    correspondence backlog”</div>
+                                <div style="display:flex;gap:8px;margin-top:10px"><span class="btn danger">Approve
+                                        deletion</span><span class="btn ghost">Decline</span></div>
+                            </div>
+                            <div style="border:1px solid var(--line);border-radius:8px;padding:12px">
+                                <strong class="mono">DOC-2025-117213</strong>
+                                <div class="hint">Requested by K. Naidoo · “Wrong file plan series applied at capture”
+                                </div>
+                                <div style="display:flex;gap:8px;margin-top:10px"><span class="btn danger">Approve
+                                        deletion</span><span class="btn ghost">Decline</span></div>
+                            </div>
+                            <div class="note seal">Approving a deletion writes the record, the reason and the approving
+                                administrator to the audit trail. The trail entry itself can never be removed.</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <header>
+                            <h3>Audit report builder</h3>
+                        </header>
+                        <div class="body">
+                            <div class="grid g2">
+                                <div class="field"><label class="f" for="a1">Report</label><select id="a1">
+                                        <option>User activity</option>
+                                        <option>Deletions &amp; amendments</option>
+                                        <option>Access denials</option>
+                                        <option>File movements by division</option>
+                                    </select></div>
+                                <div class="field"><label class="f" for="a2">Period</label><select id="a2">
+                                        <option>This month</option>
+                                        <option>Last quarter</option>
+                                        <option>Financial year to date</option>
+                                    </select></div>
+                            </div>
+                            <div class="field"><label class="f">Deliver as</label>
+                                <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="tag ink">PDF</span><span
+                                        class="tag">Excel</span><span class="tag">CSV</span><span class="tag">Scheduled
+                                        email</span></div>
+                            </div>
+                            <span class="btn gold">Generate report</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ 09 · USERS & ACCESS ============ -->
+            <section class="panel" id="p-users">
+                <div class="pagehead">
+                    <div>
+                        <div class="eyebrow">Users &amp; access · elements 6, 7, 8, 25</div>
+                        <h1>Users &amp; access control</h1>
+                        <p>SABC administrators own every account. Roles decide what a person may see, move, amend or
+                            delete.</p>
+                    </div>
+                    <span class="btn gold">Add user</span>
+                </div>
+
+                <div class="grid g-2-1" style="margin-bottom:16px">
+                    <div class="card">
+                        <header>
+                            <h3>User accounts</h3><span class="sub">34 active · 3 awaiting authorisation</span>
+                        </header>
+                        <div class="tablewrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Division</th>
+                                        <th>Role</th>
+                                        <th>Authentication</th>
+                                        <th>Last sign-in</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>N. Mahlangu</td>
+                                        <td>Records Management</td>
+                                        <td><span class="tag ink">Administrator</span></td>
+                                        <td>AD + MFA</td>
+                                        <td class="mono">03/08 07:12</td>
+                                        <td><span class="tag ok"><i class="dot"></i> Active</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>P. Sithole</td>
+                                        <td>Records Management</td>
+                                        <td><span class="tag">Senior clerk</span></td>
+                                        <td>AD + MFA</td>
+                                        <td class="mono">03/08 08:03</td>
+                                        <td><span class="tag ok"><i class="dot"></i> Active</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>T. van Wyk</td>
+                                        <td>News &amp; Current Affairs</td>
+                                        <td><span class="tag">Clerk</span></td>
+                                        <td>AD</td>
+                                        <td class="mono">03/08 08:39</td>
+                                        <td><span class="tag ok"><i class="dot"></i> Active</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>K. Naidoo</td>
+                                        <td>Records Management</td>
+                                        <td><span class="tag">Clerk</span></td>
+                                        <td>AD</td>
+                                        <td class="mono">03/08 07:55</td>
+                                        <td><span class="tag ok"><i class="dot"></i> Active</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>M. Dlamini</td>
+                                        <td>Human Capital</td>
+                                        <td><span class="tag">Reader</span></td>
+                                        <td>AD</td>
+                                        <td class="mono">02/08 15:41</td>
+                                        <td><span class="tag bad"><i class="dot"></i> Locked · 3 failed attempts</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>L. Botha</td>
+                                        <td>Legal Services</td>
+                                        <td><span class="tag">Reader</span></td>
+                                        <td>AD</td>
+                                        <td>—</td>
+                                        <td><span class="tag warn"><i class="dot"></i> Awaiting authorisation</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <header>
+                            <h3>Pending authorisation</h3><span class="tag warn">3</span>
+                        </header>
+                        <div class="body grid" style="gap:12px">
+                            <div style="border:1px solid var(--line);border-radius:8px;padding:12px">
+                                <strong>L. Botha</strong> · Legal Services
+                                <div class="hint">Requested role: Reader · limited to series 7 and 9</div>
+                                <div style="display:flex;gap:8px;margin-top:10px"><span
+                                        class="btn gold">Authorise</span><span class="btn ghost">Decline</span></div>
+                            </div>
+                            <div class="note">No account can sign in until an SABC administrator authorises it. Vendor
+                                staff have no standing access to production data.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <header>
+                        <h3>Role permissions</h3><span class="sub">Change a tick and the change is logged</span>
+                    </header>
+                    <div class="tablewrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Permission</th>
+                                    <th>Administrator</th>
+                                    <th>Senior clerk</th>
+                                    <th>Clerk</th>
+                                    <th>Reader</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Search and view entries</td>
+                                    <td class="yes">✓</td>
+                                    <td class="yes">✓</td>
+                                    <td class="yes">✓</td>
+                                    <td class="yes">✓</td>
+                                </tr>
+                                <tr>
+                                    <td>Open linked documents</td>
+                                    <td class="yes">✓</td>
+                                    <td class="yes">✓</td>
+                                    <td class="yes">✓</td>
+                                    <td class="yes">✓</td>
+                                </tr>
+                                <tr>
+                                    <td>Capture and index entries</td>
+                                    <td class="yes">✓</td>
+                                    <td class="yes">✓</td>
+                                    <td class="yes">✓</td>
+                                    <td>—</td>
+                                </tr>
+                                <tr>
+                                    <td>Issue and receive files</td>
+                                    <td class="yes">✓</td>
+                                    <td class="yes">✓</td>
+                                    <td class="yes">✓</td>
+                                    <td>—</td>
+                                </tr>
+                                <tr>
+                                    <td>Amend an existing entry</td>
+                                    <td class="yes">✓</td>
+                                    <td class="yes">✓</td>
+                                    <td>—</td>
+                                    <td>—</td>
+                                </tr>
+                                <tr>
+                                    <td>Print barcodes</td>
+                                    <td class="yes">✓</td>
+                                    <td class="yes">✓</td>
+                                    <td class="yes">✓</td>
+                                    <td>—</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Delete entries or documents</strong></td>
+                                    <td class="yes">✓</td>
+                                    <td>—</td>
+                                    <td>—</td>
+                                    <td>—</td>
+                                </tr>
+                                <tr>
+                                    <td>Authorise new users</td>
+                                    <td class="yes">✓</td>
+                                    <td>—</td>
+                                    <td>—</td>
+                                    <td>—</td>
+                                </tr>
+                                <tr>
+                                    <td>Add fields and build reports</td>
+                                    <td class="yes">✓</td>
+                                    <td>—</td>
+                                    <td>—</td>
+                                    <td>—</td>
+                                </tr>
+                                <tr>
+                                    <td>View confidential / Key Point records</td>
+                                    <td class="yes">✓</td>
+                                    <td class="yes">✓</td>
+                                    <td>By series</td>
+                                    <td>—</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="body" style="border-top:1px solid var(--line)">
+                        <div class="grid g3">
+                            <div class="note teal"><strong>Authentication</strong><br>Active Directory single sign-on,
+                                with MFA enforced for administrators and senior clerks.</div>
+                            <div class="note teal"><strong>Authorisation</strong><br>Role plus file plan series scope. A
+                                clerk who may not see series 12 cannot search it or find it.</div>
+                            <div class="note teal"><strong>Session control</strong><br>15-minute idle lock, five failed
+                                attempts locks the account, all attempts logged.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ 10 · MIGRATION ============ -->
+            <section class="panel" id="p-mig">
+                <div class="pagehead">
+                    <div>
+                        <div class="eyebrow">Data migration · element 1</div>
+                        <h1>Migration from Document Warehouse</h1>
+                        <p>All data on the SABC servers is converted and loaded into VaultLine, with a reconciliation
+                            count at every stage.</p>
+                    </div>
+                    <span class="tag ok"><i class="dot"></i> Dry run 3 complete · 0 rejects</span>
+                </div>
+
+                <div class="grid g-2-1" style="margin-bottom:16px">
+                    <div class="card">
+                        <header>
+                            <h3>Migration run · SABC-MIG-003</h3><span class="sub">Source: Document Warehouse on Windows
+                                Server + SQL Server</span>
+                        </header>
+                        <div class="body grid" style="gap:16px">
+                            <div>
+                                <div style="display:flex;justify-content:space-between;font-size:12.5px"><span>1 ·
+                                        Extract from SQL Server</span><strong>418 662 / 418 662</strong></div>
+                                <div class="meter" style="margin-top:6px"><i style="width:100%"></i></div>
+                            </div>
+                            <div>
+                                <div style="display:flex;justify-content:space-between;font-size:12.5px"><span>2 · Map
+                                        to file plan series codes</span><strong>418 662 / 418 662</strong></div>
+                                <div class="meter" style="margin-top:6px"><i style="width:100%"></i></div>
+                            </div>
+                            <div>
+                                <div style="display:flex;justify-content:space-between;font-size:12.5px"><span>3 · Copy
+                                        and verify scanned images</span><strong>396 118 / 418 662</strong></div>
+                                <div class="meter" style="margin-top:6px"><i class="gold" style="width:94%"></i></div>
+                            </div>
+                            <div>
+                                <div style="display:flex;justify-content:space-between;font-size:12.5px"><span>4 ·
+                                        Rebuild barcode and location links</span><strong>Queued</strong></div>
+                                <div class="meter" style="margin-top:6px"><i style="width:0"></i></div>
+                            </div>
+                            <div class="note teal">Legacy references are kept alongside the new ones, so a clerk
+                                searching an old Document Warehouse number still finds the record.</div>
+                        </div>
+                    </div>
+
+                    <div class="grid" style="align-content:start">
+                        <div class="card">
+                            <header>
+                                <h3>Reconciliation</h3>
+                            </header>
+                            <div class="body">
+                                <dl class="kv">
+                                    <dt>Source rows</dt>
+                                    <dd class="mono">418 662</dd>
+                                    <dt>Loaded</dt>
+                                    <dd class="mono">418 662</dd>
+                                    <dt>Variance</dt>
+                                    <dd class="yes mono">0</dd>
+                                    <dt>Images matched</dt>
+                                    <dd class="mono">396 118 (94%)</dd>
+                                    <dt>Exceptions</dt>
+                                    <dd class="mono">2 044 · missing source file</dd>
+                                </dl>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <header>
+                                <h3>Exit &amp; data handback</h3>
+                            </header>
+                            <div class="body">
+                                <p style="margin:0 0 10px">At the end of the contract, SABC extracts everything in a
+                                    readable, usable format — no vendor tooling required.</p>
+                                <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="tag ink">SQL
+                                        backup</span><span class="tag">CSV index</span><span class="tag">PDF/A
+                                        documents</span><span class="tag">Folder tree by series</span></div>
+                                <span class="btn ghost" style="margin-top:12px">Run export now</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <header>
+                        <h3>Field mapping</h3><span class="sub">Document Warehouse → VaultLine</span>
+                    </header>
+                    <div class="tablewrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Legacy table.column</th>
+                                    <th>Legacy type</th>
+                                    <th>VaultLine field</th>
+                                    <th>Transform</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="mono">dw_docs.doc_ref</td>
+                                    <td>varchar(20)</td>
+                                    <td>Reference number</td>
+                                    <td>Prefix + zero pad</td>
+                                    <td><span class="tag ok">Mapped</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="mono">dw_docs.file_code</td>
+                                    <td>varchar(12)</td>
+                                    <td>File plan series</td>
+                                    <td>Lookup to 2019 plan</td>
+                                    <td><span class="tag ok">Mapped</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="mono">dw_docs.subj</td>
+                                    <td>varchar(255)</td>
+                                    <td>Subject / title</td>
+                                    <td>Trim, title case</td>
+                                    <td><span class="tag ok">Mapped</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="mono">dw_box.box_no</td>
+                                    <td>int</td>
+                                    <td>Box barcode</td>
+                                    <td>BOX-ARC-#####</td>
+                                    <td><span class="tag ok">Mapped</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="mono">dw_loc.rack / shelf</td>
+                                    <td>varchar</td>
+                                    <td>Shelf location</td>
+                                    <td>Concatenate to VLT-x-Rxx-Sxx</td>
+                                    <td><span class="tag ok">Mapped</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="mono">dw_move.hist</td>
+                                    <td>text</td>
+                                    <td>Travel history</td>
+                                    <td>Split into transactions</td>
+                                    <td><span class="tag warn">Review</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="mono">dw_docs.scan_path</td>
+                                    <td>varchar(400)</td>
+                                    <td>Linked document</td>
+                                    <td>Copy file, checksum</td>
+                                    <td><span class="tag warn">2 044 exceptions</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ 08 · REPORTS & FIELDS ============ -->
+            <section class="panel" id="p-rep">
+                <div class="pagehead">
+                    <div>
+                        <div class="eyebrow">Reports &amp; fields · elements 10, 11, 20, 24</div>
+                        <h1>Reports &amp; configuration</h1>
+                        <p>Add a field, extend a lookup table or build a report from the screen — no development work
+                            and no change fee.</p>
+                    </div>
+                    <span class="btn gold">New report</span>
+                </div>
+
+                <div class="grid g2" style="margin-bottom:16px">
+                    <div class="card">
+                        <header>
+                            <h3>Add a field</h3><span class="sub">Configuration, not development</span>
+                        </header>
+                        <div class="body">
+                            <div class="grid g2">
+                                <div class="field"><label class="f" for="f1">Field name</label><input id="f1"
+                                        type="text" value="Legal hold reference"></div>
+                                <div class="field"><label class="f" for="f2">Field type</label><select id="f2">
+                                        <option>Text</option>
+                                        <option>Number</option>
+                                        <option>Date</option>
+                                        <option>Lookup list</option>
+                                        <option>Yes / No</option>
+                                    </select></div>
+                            </div>
+                            <div class="grid g2">
+                                <div class="field"><label class="f" for="f3">Applies to</label><select id="f3">
+                                        <option>Series 9 — Governance &amp; Secretariat</option>
+                                        <option>All series</option>
+                                    </select></div>
+                                <div class="field"><label class="f" for="f4">Required</label><select id="f4">
+                                        <option>Optional</option>
+                                        <option>Required at capture</option>
+                                    </select></div>
+                            </div>
+                            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                                <span class="btn gold">Publish field</span>
+                                <span class="hint" style="margin:0">Live on the capture screen immediately. Existing
+                                    entries keep their history.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <header>
+                            <h3>Lookup tables</h3><span class="sub">Maintained by administrators</span>
+                        </header>
+                        <div class="tablewrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Table</th>
+                                        <th>Values</th>
+                                        <th>Used on</th>
+                                        <th>Last changed</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Document type</td>
+                                        <td class="mono">28</td>
+                                        <td>Capture, search, barcode</td>
+                                        <td class="mono">02/08/2026</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Sub-document type</td>
+                                        <td class="mono">146</td>
+                                        <td>Capture, barcode</td>
+                                        <td class="mono">28/07/2026</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Division</td>
+                                        <td class="mono">19</td>
+                                        <td>Capture, reports</td>
+                                        <td class="mono">14/06/2026</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Vault locations</td>
+                                        <td class="mono">3 480</td>
+                                        <td>Tracking</td>
+                                        <td class="mono">21/07/2026</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Retention schedules</td>
+                                        <td class="mono">62</td>
+                                        <td>Capture, disposal</td>
+                                        <td class="mono">30/05/2026</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Classification</td>
+                                        <td class="mono">5</td>
+                                        <td>Capture, access rules</td>
+                                        <td class="mono">11/03/2026</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid g-1-2">
+                    <div class="card">
+                        <header>
+                            <h3>Standard reports</h3>
+                        </header>
+                        <div class="body grid" style="gap:10px">
+                            <div style="display:flex;justify-content:space-between;gap:10px"><span>File movements by
+                                    division</span><span class="tag">Weekly</span></div>
+                            <div style="display:flex;justify-content:space-between;gap:10px"><span>Overdue
+                                    loans</span><span class="tag">Daily</span></div>
+                            <div style="display:flex;justify-content:space-between;gap:10px"><span>User
+                                    activity</span><span class="tag">Monthly</span></div>
+                            <div style="display:flex;justify-content:space-between;gap:10px"><span>Audit
+                                    report</span><span class="tag">On demand</span></div>
+                            <div style="display:flex;justify-content:space-between;gap:10px"><span>Capture productivity
+                                    by clerk</span><span class="tag">Monthly</span></div>
+                            <div style="display:flex;justify-content:space-between;gap:10px"><span>Duplicate
+                                    documents</span><span class="tag">Weekly</span></div>
+                            <div style="display:flex;justify-content:space-between;gap:10px"><span>Records due for
+                                    disposal</span><span class="tag">Quarterly</span></div>
+                            <div style="display:flex;justify-content:space-between;gap:10px"><span>Vault capacity by
+                                    row</span><span class="tag">Monthly</span></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <header>
+                            <h3>File movements by division — July 2026</h3>
+                            <div style="display:flex;gap:6px"><span class="tag">PDF</span><span
+                                    class="tag">Excel</span><span class="tag">CSV</span></div>
+                        </header>
+                        <div class="body">
+                            <div class="bars" style="height:170px">
+                                <div>
+                                    <div class="b" style="height:88%"></div><small>News</small>
+                                </div>
+                                <div>
+                                    <div class="b" style="height:61%"></div><small>Legal</small>
+                                </div>
+                                <div>
+                                    <div class="b" style="height:54%"></div><small>HC</small>
+                                </div>
+                                <div>
+                                    <div class="b" style="height:43%"></div><small>Finance</small>
+                                </div>
+                                <div>
+                                    <div class="b" style="height:34%"></div><small>Sec.</small>
+                                </div>
+                                <div>
+                                    <div class="b alt" style="height:22%"></div><small>Sales</small>
+                                </div>
+                            </div>
+                            <div class="tablewrap" style="margin-top:14px">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Division</th>
+                                            <th>Issued</th>
+                                            <th>Returned</th>
+                                            <th>Outstanding</th>
+                                            <th>Avg. days out</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>News &amp; Current Affairs</td>
+                                            <td class="mono">412</td>
+                                            <td class="mono">387</td>
+                                            <td class="mono">25</td>
+                                            <td class="mono">9.4</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Legal Services</td>
+                                            <td class="mono">286</td>
+                                            <td class="mono">271</td>
+                                            <td class="mono">15</td>
+                                            <td class="mono">12.1</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Human Capital</td>
+                                            <td class="mono">254</td>
+                                            <td class="mono">246</td>
+                                            <td class="mono">8</td>
+                                            <td class="mono">6.8</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Finance</td>
+                                            <td class="mono">201</td>
+                                            <td class="mono">198</td>
+                                            <td class="mono">3</td>
+                                            <td class="mono">5.2</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ 11 · SYSTEM & LICENCES ============ -->
+            <section class="panel" id="p-sys">
+                <div class="pagehead">
+                    <div>
+                        <div class="eyebrow">System &amp; licences · elements 22, 23, 26</div>
+                        <h1>System, licences, backup</h1>
+                        <p>What the system runs on, how it is licensed, and how quickly it comes back after an
+                            interruption.</p>
+                    </div>
+                    <span class="tag ok"><i class="dot"></i> All services healthy</span>
+                </div>
+
+                <div class="grid g3" style="margin-bottom:16px">
+                    <div class="card">
+                        <header>
+                            <h3>Platform</h3>
+                        </header>
+                        <div class="body">
+                            <dl class="kv">
+                                <dt>Client</dt>
+                                <dd>Windows-based, multi-user, network ready</dd>
+                                <dt>Server OS</dt>
+                                <dd>Windows Server 2022 (virtual, 8 vCPU / 32 GB)</dd>
+                                <dt>Database</dt>
+                                <dd>SQL Server 2022 Standard</dd>
+                                <dt>Storage</dt>
+                                <dd>4 TB SAN, expandable</dd>
+                                <dt>Scanners</dt>
+                                <dd>TWAIN / ISIS, network-attached</dd>
+                                <dt>Concurrency</dt>
+                                <dd>Tested to 120 concurrent users</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <header>
+                            <h3>Licensing</h3>
+                        </header>
+                        <div class="body">
+                            <dl class="kv">
+                                <dt>Type</dt>
+                                <dd><strong>Perpetual</strong> application licence — it does not expire</dd>
+                                <dt>Seats</dt>
+                                <dd>50 named users, 120 concurrent</dd>
+                                <dt>Support</dt>
+                                <dd>Annual maintenance &amp; support, renewable</dd>
+                                <dt>Database</dt>
+                                <dd>SQL Server licence held by SABC</dd>
+                                <dt>On exit</dt>
+                                <dd>Licence and data remain with SABC</dd>
+                            </dl>
+                            <div class="note teal" style="margin-top:12px">Not subscription-based. If support lapses,
+                                the system keeps running.</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <header>
+                            <h3>Backup &amp; recovery</h3>
+                        </header>
+                        <div class="body">
+                            <dl class="kv">
+                                <dt>Full backup</dt>
+                                <dd>Nightly, 22:00</dd>
+                                <dt>Log backup</dt>
+                                <dd>Every 15 minutes</dd>
+                                <dt>Documents</dt>
+                                <dd>Replicated to secondary site</dd>
+                                <dt>RPO</dt>
+                                <dd>15 minutes</dd>
+                                <dt>RTO</dt>
+                                <dd>Under 4 hours</dd>
+                                <dt>Restore test</dt>
+                                <dd>Quarterly, evidenced</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid g2">
+                    <div class="card">
+                        <header>
+                            <h3>Service health</h3><span class="sub">Last 30 days</span>
+                        </header>
+                        <div class="body grid" style="gap:14px">
+                            <div>
+                                <div style="display:flex;justify-content:space-between;font-size:12.5px">
+                                    <span>Availability</span><strong>99.7%</strong>
+                                </div>
+                                <div class="meter" style="margin-top:6px"><i style="width:99.7%"></i></div>
+                            </div>
+                            <div>
+                                <div style="display:flex;justify-content:space-between;font-size:12.5px"><span>Backups
+                                        completed on schedule</span><strong>30 of 30</strong></div>
+                                <div class="meter" style="margin-top:6px"><i style="width:100%"></i></div>
+                            </div>
+                            <div>
+                                <div style="display:flex;justify-content:space-between;font-size:12.5px"><span>Longest
+                                        restore in the period</span><strong>2 h 40 m</strong></div>
+                                <div class="meter" style="margin-top:6px"><i class="gold" style="width:67%"></i></div>
+                            </div>
+                            <div class="tablewrap">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Incident</th>
+                                            <th>Raised</th>
+                                            <th>Restored</th>
+                                            <th>Elapsed</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="mono">INC-2211</td>
+                                            <td class="mono">12/07 09:14</td>
+                                            <td class="mono">12/07 11:54</td>
+                                            <td><span class="tag ok">2 h 40 m</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="mono">INC-2198</td>
+                                            <td class="mono">28/06 13:02</td>
+                                            <td class="mono">28/06 14:11</td>
+                                            <td><span class="tag ok">1 h 09 m</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="mono">INC-2176</td>
+                                            <td class="mono">09/06 07:44</td>
+                                            <td class="mono">09/06 10:20</td>
+                                            <td><span class="tag ok">2 h 36 m</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <header>
+                            <h3>Security &amp; compliance</h3>
+                        </header>
+                        <div class="body grid" style="gap:12px">
+                            <div class="note teal"><strong>National Archives Act</strong> — indexing follows the NARSSA
+                                methodology; retention and disposal schedules are held against every series.</div>
+                            <div class="note teal"><strong>National Key Points Act</strong> — restricted records are
+                                hidden from search for users without the clearance flag, and access attempts are logged.
+                            </div>
+                            <div class="note teal"><strong>POPIA</strong> — personal information in employee records is
+                                masked in reports unless the user holds the Human Capital scope.</div>
+                            <div class="note"><strong>Encryption</strong> — TLS 1.3 in transit, TDE at rest, checksums
+                                on every stored document.</div>
+                            <div class="note"><strong>Training</strong> — 3 administrator days and 5 user days included
+                                at go-live, refreshed annually.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ 12 · DEMO CHECKLIST ============ -->
+            <section class="panel" id="p-map">
+                <div class="pagehead">
+                    <div>
+                        <div class="eyebrow">For the evaluation panel</div>
+                        <h1>Third-phase demonstration checklist</h1>
+                        <p>All 26 elements, and the screen where each one is shown during the two-hour Teams
+                            demonstration.</p>
+                    </div>
+                    <span class="btn ghost">Print checklist</span>
+                </div>
+
+                <div class="card">
+                    <div class="tablewrap">
+                        <table class="checklist">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>System element</th>
+                                    <th>Where it is demonstrated</th>
+                                    <th>Functional</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td>Convert and migrate all data on SABC servers into the system</td>
+                                    <td>Data migration</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>2</td>
+                                    <td>Both SABC file plans and sub-type folders in the index</td>
+                                    <td>File plans</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>3</td>
+                                    <td>Barcodes carrying document type and sub-type per series code</td>
+                                    <td>Capture &amp; index · Barcodes</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>4</td>
+                                    <td>Document barcodes linked to location and box barcodes</td>
+                                    <td>Barcodes &amp; labels</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>5</td>
+                                    <td>Barcodes printable on adhesive paper</td>
+                                    <td>Barcodes &amp; labels</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>6</td>
+                                    <td>Authorisation and authentication rules enforced</td>
+                                    <td>Users &amp; access</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>7</td>
+                                    <td>SABC controls all management aspects, including new users</td>
+                                    <td>Users &amp; access</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>8</td>
+                                    <td>Unauthorised access or modification prevented</td>
+                                    <td>Users &amp; access · Audit trail</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>9</td>
+                                    <td>Box and file movements tracked: origin, destination, user, date, time</td>
+                                    <td>Track &amp; trace</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>10</td>
+                                    <td>New fields and reports added without major programming cost</td>
+                                    <td>Reports &amp; fields</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>11</td>
+                                    <td>Lookup tables, fast location of records, required reports</td>
+                                    <td>Search &amp; retrieve · Reports</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>12</td>
+                                    <td>Submit button generates the barcode</td>
+                                    <td>Capture &amp; index</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>13</td>
+                                    <td>Audit functionality storing user details, dated and time stamped</td>
+                                    <td>Audit trail</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>14</td>
+                                    <td>Only one document associated with a data entry</td>
+                                    <td>Capture &amp; index</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>15</td>
+                                    <td>Each data entry reference number is unique</td>
+                                    <td>Capture &amp; index</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>16</td>
+                                    <td>Only administrators may delete; deletion recorded on the audit trail</td>
+                                    <td>Audit trail · Users &amp; access</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>17</td>
+                                    <td>All entries searchable; linked document retrievable on request</td>
+                                    <td>Search &amp; retrieve</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>18</td>
+                                    <td>Proof of transaction on request and on return</td>
+                                    <td>Track &amp; trace</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>19</td>
+                                    <td>Import from scanner; upload archived documents and boxes</td>
+                                    <td>Capture &amp; index</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>20</td>
+                                    <td>Generate user reports and audit reports</td>
+                                    <td>Reports &amp; fields · Audit trail</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>21</td>
+                                    <td>Pick up duplicate documents</td>
+                                    <td>Capture &amp; index · Vault overview</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>22</td>
+                                    <td>Windows-based, multi-user, network ready</td>
+                                    <td>System &amp; licences</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>23</td>
+                                    <td>Licence type stated: perpetual, expiring or subscription</td>
+                                    <td>System &amp; licences</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>24</td>
+                                    <td>Full reporting capabilities</td>
+                                    <td>Reports &amp; fields</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>25</td>
+                                    <td>User management, admin management and access control</td>
+                                    <td>Users &amp; access</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                                <tr>
+                                    <td>26</td>
+                                    <td>Backup and recovery of system data</td>
+                                    <td>System &amp; licences</td>
+                                    <td class="yes">YES</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="rule-barcode" style="margin:18px 0"></div>
+                <div class="footnote">
+                    <span>VaultLine demonstration build · illustrative data only</span>
+                    <span class="mono">RFQ/COP/2026/10251403/11 · Third phase</span>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+
+</html>
